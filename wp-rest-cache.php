@@ -1,12 +1,10 @@
 <?php
-# TODO: rename plugin folder and main-plugin-file.php (we recommend you make them the same name)
-# TODO: Fill out details of this files header comment block
 /**
- * Plugin Name: WordPress REST Cache
+ * Plugin Name: WP REST Cache
  * Plugin URI: https://github.com/WordPress-Phoenix/wordpress-rest-cache
- * Description: Coming soon...
- * Author: Seth Carstens
- * Version: 0.1.1
+ * Description: A solution to caching REST data calls without relying on transients or wp_options tables
+ * Author: scarstens
+ * Version: 0.2.0
  * Author URI: http://github.com/scarstens
  * License: GPL V2
  * Text Domain: rest_cache
@@ -14,7 +12,7 @@
  * GitHub Plugin URI: https://github.com/WordPress-Phoenix/wordpress-rest-cache
  * GitHub Branch: master
  *
- * @package WordPress_Rest_Cache
+ * @package WP_Rest_Cache
  * @category plugin
  * @author
  * @internal Plugin derived from https://github.com/scarstens/worpress-plugin-boilerplate-redux
@@ -27,17 +25,9 @@ if ( ! function_exists( 'add_filter' ) ) {
 	exit();
 }
 
-if ( ! class_exists( 'WordPress_Rest_Cache' ) ) {
-	class WordPress_Rest_Cache {
-
-		public $debug;
+if ( ! class_exists( 'WP_Rest_Cache' ) ) {
+	class WP_Rest_Cache {
 		public $installed_dir;
-		public $installed_url;
-		public $admin;
-		public $modules;
-		public $network;
-		public $current_blog_globals;
-		public $detect;
 
 		/**
 		 * Construct the plugin object
@@ -45,6 +35,7 @@ if ( ! class_exists( 'WordPress_Rest_Cache' ) ) {
 		 * @since   0.1
 		 */
 		public function __construct() {
+			$this->installed_dir = plugin_dir_path( __FILE__ );
 
 			// hook can be used by mu plugins to modify plugin behavior after plugin is setup
 			do_action( get_called_class() . '_preface', $this );
@@ -160,11 +151,12 @@ if ( ! class_exists( 'WordPress_Rest_Cache' ) ) {
 		 * @return  void
 		 */
 		protected function load_classes() {
+			// TODO: update the below section to use an autoloader so we can include properly named classes (should be class-the-name.php)
 			// load all files with the pattern *.class.php from the includes directory
-			foreach ( glob( dirname( __FILE__ ) . '/includes/*.class.php' ) as $class ) {
-				require_once $class;
-				$this->modules->count ++;
-			}
+//			foreach ( glob( dirname( __FILE__ ) . '/includes/*.class.php' ) as $class ) {
+//				require_once $class;
+//				$this->modules->count ++;
+//			}
 		}
 
 		/**
@@ -175,10 +167,8 @@ if ( ! class_exists( 'WordPress_Rest_Cache' ) ) {
 		 * @return  void
 		 */
 		protected function load_libary() {
-			// load all files with the pattern *.php from the directory inc
-			foreach ( glob( dirname( __FILE__ ) . '/lib/*.class.php' ) as $class ) {
-				require_once $class;
-			}
+			// TODO: set up autoloader for all files in /lib, we're individually requiring at the moment
+			require_once( $this->installed_dir . '/lib/class-wp-http-cache.php' );
 		}
 
 		protected function defines_and_globals() {
@@ -209,12 +199,12 @@ if ( ! class_exists( 'WordPress_Rest_Cache' ) ) {
 /**
  * Build and initialize the plugin
  */
-if ( class_exists( 'WordPress_Rest_Cache' ) ) {
+if ( class_exists( 'WP_Rest_Cache' ) ) {
 	// Installation and un-installation hooks
-	register_activation_hook( __FILE__, array( 'WordPress_Rest_Cache', 'activate' ) );
-	register_deactivation_hook( __FILE__, array( 'WordPress_Rest_Cache', 'deactivate' ) );
+	register_activation_hook( __FILE__, array( 'WP_Rest_Cache', 'activate' ) );
+	register_deactivation_hook( __FILE__, array( 'WP_Rest_Cache', 'deactivate' ) );
 
 	// instantiate the plugin class, which should never be instantiated more then once
-	global $WordPress_Rest_Cache;
-	$WordPress_Rest_Cache = new WordPress_Rest_Cache();
+	global $WP_Rest_Cache;
+	$WP_Rest_Cache = new WP_Rest_Cache();
 }
