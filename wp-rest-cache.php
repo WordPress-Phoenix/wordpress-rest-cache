@@ -72,8 +72,9 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			// Load /includes/ folder php files
 			$this->load_classes();
 
-			// initialize
-			add_action( 'init', array( $this, 'init' ) );
+			// initialize not by adding an action but by running init function that adds its own actions/filters
+			// nesting actions/filters within the init action was causing the transport filter to run too late in some cases
+			$this->init();
 
 			// init for use with logged in users, see this::authenticated_init for more details
 			add_action( 'init', array( $this, 'authenticated_init' ) );
