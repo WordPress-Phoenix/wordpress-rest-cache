@@ -5,17 +5,21 @@
  *
  * Name of class must stay prefixed with WP_Http to work with WordPress transport filters
  *
- * TODO: consider "paginating" the cached updating via cron. Currently one cron executes to loop over the rows that need new calls/updates
+ * TODO: consider "paginating" the cached updating via cron. Currently one cron executes to loop over the rows that
+ * need new calls/updates
  */
 class WP_Http_Cache {
 	static $table = 'wp_rest_cache';
 	static $columns = 'rest_md5,rest_domain,rest_path,rest_response,rest_expires,rest_last_requested,rest_tag,rest_to_update';
 	static $default_expires = 600; // defaults to 10 minutes, this is always in seconds
 
+	/**
+	 * Initialize
+	 */
 	static function init() {
 		add_action( 'wp', array( get_called_class(), 'schedule_cron' ) );
 		add_action( 'wp_rest_cache_cron', array( get_called_class(), 'check_cache_for_updates' ) );
-		add_filter('cron_schedules', array( get_called_class(), 'add_schedule_interval' ) );
+		add_filter( 'cron_schedules', array( get_called_class(), 'add_schedule_interval' ) );
 		// Add a filter to available HTTP transports so that "cache" is the first thing it checks
 		add_filter( 'http_api_transports', array( get_called_class(), 'add_cache_transport' ), 2, 3 );
 	}
@@ -31,7 +35,7 @@ class WP_Http_Cache {
 
 		$schedules['5_minutes'] = array(
 			'interval' => 300, // 5 minutes in seconds
-			'display' => 'Once every 5 minutes'
+			'display'  => 'Once every 5 minutes'
 		);
 
 		return $schedules;
@@ -46,31 +50,47 @@ class WP_Http_Cache {
 		}
 	}
 
+	/**
+	 * Check the cache table for rows that need updated during our cron
+	 */
 	static function check_cache_for_updates() {
 		// search our custom DB table for where rest_to_update === 1
 		// for each  one that === 1, we need to trigger a new wp_remote_get using the args
 		// we need to split each one of these out into its own execution, so we don't time
 		// out PHP by, for example, running ten 7-second calls in a row.
 		global $wpdb;
-		$query = 'SELECT * FROM ' . static::$table . ' WHERE rest_to_update = 1';
+		$query   = 'SELECT * FROM ' . static::$table . ' WHERE rest_to_update = 1';
 		$results = $wpdb->get_results( $query, ARRAY_A );
 
 		if ( is_array( $results ) && ! empty ( $results ) ) {
 			foreach ( $results as $row ) {
 				// run maybe_unserialize on rest_args and check to see if the update arg is set and set to false if it is
 				$args = maybe_unserialize( $row['rest_args'] );
+				$url  = $row['rest_domain'] . $row['rest_path'];
 				if ( ! empty( $args['wp-rest-cache']['update'] ) ) {
 					$args['wp-rest-cache']['update'] = 0;
 				}
 
-				$response = static::request( $row['rest_domain'] . $row['rest_path'], $args, true );
+				$response = static::request( $url, $args, true );
 
-				error_log( 'in foreach, request for ' . $row['rest_path'] );
+				if ( $response ) {
+					// manually apply the http_response filters as they won't get applied when the cron runs for some reason
+					$response = apply_filters( 'http_response', $response, $args, $url );
+				}
 			}
 		}
-		
+
 	}
 
+	/**
+	 * Prepend the transports array with our custom cache transport
+	 *
+	 * @param $transports
+	 * @param $args
+	 * @param $url
+	 *
+	 * @return array
+	 */
 	static function add_cache_transport( $transports, $args, $url ) {
 		$method = ! empty( $args['method'] ) ? strtolower( $args['method'] ) : '';
 
@@ -81,6 +101,13 @@ class WP_Http_Cache {
 		return $transports;
 	}
 
+	/**
+	 * Pull the cached data row from our custom table by matching the md5'd URL
+	 *
+	 * @param $url
+	 *
+	 * @return array|bool|null|object|void
+	 */
 	static function get_data( $url ) {
 		global $wpdb;
 
@@ -94,9 +121,16 @@ class WP_Http_Cache {
 		return $data;
 	}
 
+	/**
+	 * Save or update cached data in our custom table based on the md5'd URL
+	 *
+	 * @param $response
+	 * @param $args
+	 * @param $url
+	 *
+	 * @return mixed
+	 */
 	static function store_data( $response, $args, $url ) {
-		error_log( 'store data running' );
-
 		// don't try to store if we don't have a 200 response
 		if ( 200 != wp_remote_retrieve_response_code( $response ) ) {
 			return $response;
@@ -185,7 +219,6 @@ class WP_Http_Cache {
 		 */
 
 		if ( strtotime( $data['rest_expires'] ) < time() && 1 != $data['rest_to_update'] ) {
-			error_log('in check for expired -> is expired');
 
 			// instead of updating rest_expires, update rest_timeout_length
 			$data['rest_args']      = maybe_serialize( $args );
@@ -197,6 +230,15 @@ class WP_Http_Cache {
 
 	}
 
+	/**
+	 * Either return a cached result or run an HTTP curl request
+	 *
+	 * @param      $url
+	 * @param      $args
+	 * @param bool $force_update
+	 *
+	 * @return array|mixed|WP_Error
+	 */
 	static function request( $url, $args, $force_update = false ) {
 		// after setting the transport filter appropriately above,
 		// we'll end up in here ( WP_Http_Cache->request() ) to make the actual request
@@ -213,7 +255,6 @@ class WP_Http_Cache {
 			// If it gets to the http response filter, check if we should create/update the data
 			add_filter( 'http_response', array( get_called_class(), 'store_data' ), 10, 3 );
 
-			error_log( 'making request' );
 			$wp_request = new WP_Http_Curl();
 			$response   = $wp_request->request( $url, $args );
 
