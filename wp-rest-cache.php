@@ -25,6 +25,14 @@ if ( ! function_exists( 'add_filter' ) ) {
 	exit();
 }
 
+/**
+ * a comma separated list entries for domains that should be entirely excluded from caching
+ */
+if ( ! defined( 'WP_REST_CACHE_EXCLUSIONS' ) ) {
+	$default_exclusions = 'downloads.wordpress.org';
+	define( 'WP_REST_CACHE_EXCLUSIONS', $default_exclusions );
+}
+
 if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 	class WP_Rest_Cache {
 		public $installed_dir;

@@ -51,7 +51,7 @@ class WP_Http_Cache {
 	}
 
 	/**
-	 * Check the cache table for rows that need updated during our cron
+	 * Check the cache table for rows that need updated during our cron.
 	 */
 	static function check_cache_for_updates() {
 		// search our custom DB table for where rest_to_update === 1
@@ -94,7 +94,15 @@ class WP_Http_Cache {
 	static function add_cache_transport( $transports, $args, $url ) {
 		$method = ! empty( $args['method'] ) ? strtolower( $args['method'] ) : '';
 
-		if ( 'get' === $method && empty( $_REQUEST['force-check'] ) ) {
+		// if the domain matches one in the exclusions list, skip it
+		$check_url = parse_url( $url );
+		$exclusions = apply_filters( 'wp_rest_cache_exclusions', WP_REST_CACHE_EXCLUSIONS );
+		// this could end up being an array already depending on how someone filters it, only explode as necessary
+		if ( ! is_array( $exclusions ) ) {
+			$exclusions = explode( ',', $exclusions );
+		}
+
+		if ( 'get' === $method && ! in_array( $check_url['host'], $exclusions ) && empty( $_REQUEST['force-check'] ) ) {
 			$transports = array_merge( array( 'cache' ), $transports );
 		}
 
