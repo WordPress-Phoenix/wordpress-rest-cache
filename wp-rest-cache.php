@@ -134,7 +134,13 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			// create our table if it doesn't already exist
 			global $wpdb;
 
-			$sql = "CREATE TABLE " . $wpdb->prefix . WP_Http_Cache::$table . " (
+			if ( is_multisite() ) {
+				$prefix = $wpdb->get_blog_prefix( BLOG_ID_CURRENT_SITE );
+			} else {
+				$prefix = $wpdb->prefix;
+			}
+
+			$sql = "CREATE TABLE " . $prefix . WP_Http_Cache::$table . " (
   `rest_md5` char(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `rest_domain` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `rest_path` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
