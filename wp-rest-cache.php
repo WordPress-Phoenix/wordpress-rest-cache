@@ -131,9 +131,29 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		 */
 		public static function activate() {
 
-			/*
-			 * Create any site options defaults for the plugins, handle deprecated values on upgrades, etc
-			 */
+			// create our table if it doesn't already exist
+			global $wpdb;
+
+			$sql = "CREATE TABLE " . $wpdb->prefix . WP_Http_Cache::$table . " (
+  `rest_md5` char(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `rest_domain` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `rest_path` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `rest_response` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rest_expires` datetime DEFAULT NULL,
+  `rest_last_requested` date NOT NULL,
+  `rest_tag` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `rest_to_update` tinyint(1) DEFAULT '0',
+  `rest_args` longtext COLLATE utf8mb4_unicode_ci,
+  PRIMARY KEY (`rest_md5`),
+  KEY `rest_domain` (`rest_domain`(191),`rest_path`(191)),
+  KEY `rest_expires` (`rest_expires`),
+  KEY `rest_last_requested` (`rest_last_requested`),
+  KEY `rest_tag` (`rest_tag`(191)),
+  KEY `rest_to_update` (`rest_to_update`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+
+			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+			dbDelta( $sql );
 
 		} // END public static function activate
 

@@ -9,7 +9,7 @@
  * need new calls/updates
  */
 class WP_Http_Cache {
-	static $table = 'wp_rest_cache';
+	static $table = 'rest_cache'; // the prefix is appended once we have access to the $wpdb global
 	static $columns = 'rest_md5,rest_domain,rest_path,rest_response,rest_expires,rest_last_requested,rest_tag,rest_to_update';
 	static $default_expires = 600; // defaults to 10 minutes, this is always in seconds
 
@@ -59,7 +59,7 @@ class WP_Http_Cache {
 		// we need to split each one of these out into its own execution, so we don't time
 		// out PHP by, for example, running ten 7-second calls in a row.
 		global $wpdb;
-		$query   = 'SELECT * FROM ' . static::$table . ' WHERE rest_to_update = 1';
+		$query   = 'SELECT * FROM ' . $wpdb->prefix . static::$table . ' WHERE rest_to_update = 1';
 		$results = $wpdb->get_results( $query, ARRAY_A );
 
 		if ( is_array( $results ) && ! empty ( $results ) ) {
@@ -119,7 +119,7 @@ class WP_Http_Cache {
 	static function get_data( $url ) {
 		global $wpdb;
 
-		$data = $wpdb->get_row( 'SELECT * FROM ' . static::$table . ' WHERE rest_md5 = "' . md5( $url ) . '" ', ARRAY_A );
+		$data = $wpdb->get_row( 'SELECT * FROM ' . $wpdb->prefix . static::$table . ' WHERE rest_md5 = "' . md5( $url ) . '" ', ARRAY_A );
 
 		// if the query doesn't return a row from the DB, return false
 		if ( null === $data ) {
@@ -186,7 +186,7 @@ class WP_Http_Cache {
 		);
 
 		// either update or insert
-		$wpdb->replace( static::$table, $data );
+		$wpdb->replace( $wpdb->prefix . static::$table, $data );
 
 		return $response;
 	}
@@ -234,7 +234,7 @@ class WP_Http_Cache {
 			$data['rest_to_update'] = 1;
 
 			global $wpdb;
-			$wpdb->replace( static::$table, $data );
+			$wpdb->replace( $wpdb->prefix . static::$table, $data );
 		}
 
 	}
