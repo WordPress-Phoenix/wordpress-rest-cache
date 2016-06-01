@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/WordPress-Phoenix/wordpress-rest-cache
  * Description: A solution to caching REST data calls without relying on transients or wp_options tables. Note: for multisite "Network Activate", table may need manually created before activation.
  * Author: scarstens
- * Version: 0.4.0
+ * Version: 0.5.0
  * Author URI: http://github.com/scarstens
  * License: GPL V2
  * Text Domain: rest_cache
@@ -135,6 +135,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			global $wpdb;
 
 			if ( is_multisite() ) {
+				// we're using the primary blog prefix since there only will be one rest cache table for the entire network
 				$prefix = $wpdb->get_blog_prefix( BLOG_ID_CURRENT_SITE );
 			} else {
 				$prefix = $wpdb->prefix;
