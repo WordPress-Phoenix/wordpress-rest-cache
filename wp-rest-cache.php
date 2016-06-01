@@ -2,9 +2,9 @@
 /**
  * Plugin Name: WP REST Cache
  * Plugin URI: https://github.com/WordPress-Phoenix/wordpress-rest-cache
- * Description: NOTE: Beta version. wp_rest_cache DB table must be manually created before plugin activation. A solution to caching REST data calls without relying on transients or wp_options tables
+ * Description: A solution to caching REST data calls without relying on transients or wp_options tables. Note: for multisite "Network Activate", table may need manually created before activation.
  * Author: scarstens
- * Version: 0.3.0
+ * Version: 0.4.0
  * Author URI: http://github.com/scarstens
  * License: GPL V2
  * Text Domain: rest_cache
