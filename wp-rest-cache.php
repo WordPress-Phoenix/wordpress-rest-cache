@@ -2,9 +2,9 @@
 /**
  * Plugin Name: WP REST Cache
  * Plugin URI: https://github.com/WordPress-Phoenix/wordpress-rest-cache
- * Description: A solution to caching REST data calls without relying on transients or wp_options tables
+ * Description: NOTE: Beta version. wp_rest_cache DB table must be manually created before plugin activation. A solution to caching REST data calls without relying on transients or wp_options tables
  * Author: scarstens
- * Version: 0.2.0
+ * Version: 0.3.0
  * Author URI: http://github.com/scarstens
  * License: GPL V2
  * Text Domain: rest_cache
@@ -29,7 +29,7 @@ if ( ! function_exists( 'add_filter' ) ) {
  * a comma separated list entries for domains that should be entirely excluded from caching
  */
 if ( ! defined( 'WP_REST_CACHE_EXCLUSIONS' ) ) {
-	$default_exclusions = 'downloads.wordpress.org';
+	$default_exclusions = 'downloads.wordpress.org,api.wordpress.org';
 	define( 'WP_REST_CACHE_EXCLUSIONS', $default_exclusions );
 }
 

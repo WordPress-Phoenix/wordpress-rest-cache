@@ -144,7 +144,8 @@ class WP_Http_Cache {
 			return $response;
 		}
 
-		// if no "expires" argument is set, we need to skip data storage
+		// TODO: consider how we'll skip data storage.. maybe if expires is set to zero?
+		// if no "expires" argument is set for now, it gets set to default
 		if ( empty( $args['wp-rest-cache']['expires'] ) ) {
 			$args['wp-rest-cache']['expires'] = static::$default_expires;
 		}
