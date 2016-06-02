@@ -212,18 +212,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			$this->installed_url  = plugins_url( '/', __FILE__ );
 
 			global $wpdb;
-			/**
-			 * Make sure the BLOG_ID_CURRENT_SITE is defined (supposed to be defined in
-			 */
-			if ( is_multisite() && ! defined( 'BLOG_ID_CURRENT_SITE' ) ) {
-				$prefix = $wpdb->get_blog_prefix( 1 );
-			} elseif( is_multisite() ) {
-				$prefix = $wpdb->get_blog_prefix( BLOG_ID_CURRENT_SITE );
-			} else {
-				$prefix = $wpdb->prefix;
-			}
-
-			define( 'REST_CACHE_DB_PREFIX', $prefix );
+			define( 'REST_CACHE_DB_PREFIX', $wpdb->base_prefix );
 		}
 
 		/**
