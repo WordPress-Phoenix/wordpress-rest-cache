@@ -132,16 +132,8 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		public static function activate() {
 
 			// create our table if it doesn't already exist
-			global $wpdb;
 
-			if ( is_multisite() ) {
-				// we're using the primary blog prefix since there only will be one rest cache table for the entire network
-				$prefix = $wpdb->get_blog_prefix( BLOG_ID_CURRENT_SITE );
-			} else {
-				$prefix = $wpdb->prefix;
-			}
-
-			$sql = "CREATE TABLE " . $prefix . WP_Http_Cache::$table . " (
+			$sql = "CREATE TABLE " . REST_CACHE_DB_PREFIX . WP_Http_Cache::$table . " (
   `rest_md5` char(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `rest_domain` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `rest_path` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
@@ -218,6 +210,20 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			$this->modules->count = 0;
 			$this->installed_dir  = dirname( __FILE__ );
 			$this->installed_url  = plugins_url( '/', __FILE__ );
+
+			global $wpdb;
+			/**
+			 * Make sure the BLOG_ID_CURRENT_SITE is defined (supposed to be defined in
+			 */
+			if ( is_multisite() && ! defined( 'BLOG_ID_CURRENT_SITE' ) ) {
+				$prefix = $wpdb->get_blog_prefix( 1 );
+			} elseif( is_multisite() ) {
+				$prefix = $wpdb->get_blog_prefix( BLOG_ID_CURRENT_SITE );
+			} else {
+				$prefix = $wpdb->prefix;
+			}
+
+			define( 'REST_CACHE_DB_PREFIX', $prefix );
 		}
 
 		/**

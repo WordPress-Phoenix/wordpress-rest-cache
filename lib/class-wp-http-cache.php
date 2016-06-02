@@ -59,13 +59,7 @@ class WP_Http_Cache {
 		// we need to split each one of these out into its own execution, so we don't time
 		// out PHP by, for example, running ten 7-second calls in a row.
 		global $wpdb;
-
-		if ( is_multisite() ) {
-			$prefix = $wpdb->get_blog_prefix( BLOG_ID_CURRENT_SITE );
-		} else {
-			$prefix = $wpdb->prefix;
-		}
-		$query   = 'SELECT * FROM ' . $prefix . static::$table . ' WHERE rest_to_update = 1';
+		$query   = 'SELECT * FROM ' . REST_CACHE_DB_PREFIX . static::$table . ' WHERE rest_to_update = 1';
 		$results = $wpdb->get_results( $query, ARRAY_A );
 
 		if ( is_array( $results ) && ! empty ( $results ) ) {
@@ -124,14 +118,7 @@ class WP_Http_Cache {
 	 */
 	static function get_data( $url ) {
 		global $wpdb;
-
-		if ( is_multisite() ) {
-			$prefix = $wpdb->get_blog_prefix( BLOG_ID_CURRENT_SITE );
-		} else {
-			$prefix = $wpdb->prefix;
-		}
-
-		$data = $wpdb->get_row( 'SELECT * FROM ' . $prefix . static::$table . ' WHERE rest_md5 = "' . md5( $url ) . '" ', ARRAY_A );
+		$data = $wpdb->get_row( 'SELECT * FROM ' . REST_CACHE_DB_PREFIX . static::$table . ' WHERE rest_md5 = "' . md5( $url ) . '" ', ARRAY_A );
 
 		// if the query doesn't return a row from the DB, return false
 		if ( null === $data ) {
@@ -163,13 +150,6 @@ class WP_Http_Cache {
 		}
 
 		global $wpdb;
-		global $wpdb;
-
-		if ( is_multisite() ) {
-			$prefix = $wpdb->get_blog_prefix( BLOG_ID_CURRENT_SITE );
-		} else {
-			$prefix = $wpdb->prefix;
-		}
 
 		// if you're on PHP < 5.4.7 make sure you're not leaving the scheme out, as it'll screw up parse_url
 		$parsed_url = parse_url( $url );
@@ -205,7 +185,7 @@ class WP_Http_Cache {
 		);
 
 		// either update or insert
-		$wpdb->replace( $prefix . static::$table, $data );
+		$wpdb->replace( REST_CACHE_DB_PREFIX . static::$table, $data );
 
 		return $response;
 	}
@@ -253,13 +233,7 @@ class WP_Http_Cache {
 			$data['rest_to_update'] = 1;
 
 			global $wpdb;
-
-			if ( is_multisite() ) {
-				$prefix = $wpdb->get_blog_prefix( BLOG_ID_CURRENT_SITE );
-			} else {
-				$prefix = $wpdb->prefix;
-			}
-			$wpdb->replace( $prefix . static::$table, $data );
+			$wpdb->replace( REST_CACHE_DB_PREFIX . static::$table, $data );
 		}
 
 	}
