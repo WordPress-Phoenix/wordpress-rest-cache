@@ -96,6 +96,11 @@ class WP_Http_Cache {
 	 */
 	static function add_cache_transport( $transports, $args, $url ) {
 
+		// If a filename has been set we're likely dealing with a download. We don't want to cache those!
+		if ( ! empty( $args['filename'] ) ) {
+			return $transports;
+		}
+
 		$method = ! empty( $args['method'] ) ? strtolower( $args['method'] ) : '';
 
 		// if the domain matches one in the exclusions list, skip it
