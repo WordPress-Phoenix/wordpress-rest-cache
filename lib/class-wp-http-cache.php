@@ -17,6 +17,9 @@ class WP_Http_Cache {
 	 * Initialize
 	 */
 	static function init() {
+		if( defined('NO_WP_REST_CACHE') ){
+			return false;
+		}
 		add_action( 'wp', array( get_called_class(), 'schedule_cron' ) );
 		add_action( 'wp_rest_cache_cron', array( get_called_class(), 'check_cache_for_updates' ) );
 		add_filter( 'cron_schedules', array( get_called_class(), 'add_schedule_interval' ) );
@@ -92,6 +95,7 @@ class WP_Http_Cache {
 	 * @return array
 	 */
 	static function add_cache_transport( $transports, $args, $url ) {
+
 		$method = ! empty( $args['method'] ) ? strtolower( $args['method'] ) : '';
 
 		// if the domain matches one in the exclusions list, skip it
