@@ -17,7 +17,7 @@ class WP_Http_Cache {
 	 * Initialize
 	 */
 	static function init() {
-		if( defined('NO_WP_REST_CACHE') ){
+		if ( defined( 'NO_WP_REST_CACHE' ) ) {
 			return false;
 		}
 		add_action( 'wp', array( get_called_class(), 'schedule_cron' ) );
@@ -48,7 +48,19 @@ class WP_Http_Cache {
 	 * Set up the initial cron.
 	 */
 	static function schedule_cron() {
-		if ( ! wp_next_scheduled( 'wp_rest_cache_cron' ) ) {
+		$is_multisite = is_multisite();
+		if ( $is_multisite ) {
+			$primary_blog = get_current_site();
+			$current_blog = get_current_blog_id();
+		}
+
+		/**
+		 * If we're on a multisite, only schedule the cron if we're on the primary blog
+		 */
+		if (
+			( ! $is_multisite || ( $is_multisite && $primary_blog->id === $current_blog ) )
+			&& ! wp_next_scheduled( 'wp_rest_cache_cron' )
+		) {
 			wp_schedule_event( time(), '5_minutes', 'wp_rest_cache_cron' );
 		}
 	}
@@ -104,7 +116,7 @@ class WP_Http_Cache {
 		$method = ! empty( $args['method'] ) ? strtolower( $args['method'] ) : '';
 
 		// if the domain matches one in the exclusions list, skip it
-		$check_url = parse_url( $url );
+		$check_url  = parse_url( $url );
 		$exclusions = apply_filters( 'wp_rest_cache_exclusions', WP_REST_CACHE_EXCLUSIONS );
 		// this could end up being an array already depending on how someone filters it, only explode as necessary
 		if ( ! is_array( $exclusions ) ) {
