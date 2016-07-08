@@ -109,7 +109,11 @@ class WP_Http_Cache {
 	static function add_cache_transport( $transports, $args, $url ) {
 
 		// If a filename has been set we're likely dealing with a download. We don't want to cache those!
-		if ( ! empty( $args['filename'] ) ) {
+		// We also want to exclude anything with the 'wp-rest-cache' arg explicitly set to 'exclude'
+		if (
+			! empty( $args['filename'] )
+			|| ( ! empty( $args['wp-rest-cache'] ) && 'exclude' === $args['wp-rest-cache'] )
+		) {
 			return $transports;
 		}
 

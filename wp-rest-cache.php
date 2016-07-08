@@ -14,7 +14,7 @@
  *
  * @package WP_Rest_Cache
  * @category plugin
- * @author
+ * @author mlteal, scarstens
  * @internal Plugin derived from https://github.com/scarstens/worpress-plugin-boilerplate-redux
  */
 
@@ -69,7 +69,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			// define globals used by the plugin including bloginfo
 			$this->defines_and_globals();
 
-			// Load /includes/ folder php files
+			// Loads the /inc/ autoloader
 			$this->load_classes();
 
 			// initialize not by adding an action but by running init function that adds its own actions/filters
@@ -99,6 +99,10 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			
 			if ( class_exists( 'WP_Http_Cache' ) ) {
 				WP_Http_Cache::init();
+			}
+
+			if ( class_exists( 'WRC_Filters' ) ) {
+				WRC_Filters::init();
 			}
 
 			do_action( get_called_class() . '_after_init' );
@@ -173,18 +177,13 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 
 		/**
 		 * Loads PHP files in the includes folder
-		 * @TODO: Move to using spl_autoload_register
 		 *
 		 * @since   0.1
 		 * @return  void
 		 */
 		protected function load_classes() {
-			// TODO: update the below section to use an autoloader so we can include properly named classes (should be class-the-name.php)
-			// load all files with the pattern *.class.php from the includes directory
-//			foreach ( glob( dirname( __FILE__ ) . '/includes/*.class.php' ) as $class ) {
-//				require_once $class;
-//				$this->modules->count ++;
-//			}
+			// this class self-instantiates from within the file
+			require_once( 'class-wrc-autoloader.php');
 		}
 
 		/**
