@@ -69,10 +69,12 @@ class WP_Http_Cache {
 	 * Check the cache table for rows that need updated during our cron.
 	 */
 	static function check_cache_for_updates() {
-		// search our custom DB table for where rest_to_update === 1
-		// for each  one that === 1, we need to trigger a new wp_remote_get using the args
-		// we need to split each one of these out into its own execution, so we don't time
-		// out PHP by, for example, running ten 7-second calls in a row.
+		/**
+		 * Search our custom DB table for where rest_to_update === 1.
+		 * For each  one that === 1, we need to trigger a new wp_remote_get using the args.
+		 * We need to split each one of these out into its own execution, so we don't time
+		 * out PHP by, for example, running ten 7-second calls in a row.
+		 */
 		global $wpdb;
 		$query   = 'SELECT * FROM ' . REST_CACHE_DB_PREFIX . static::$table . ' WHERE rest_to_update = 1';
 		$results = $wpdb->get_results( $query, ARRAY_A );
@@ -86,6 +88,11 @@ class WP_Http_Cache {
 					$args['wp-rest-cache']['update'] = 0;
 				}
 
+				/**
+				 * Get a response by going directly to our own request() function.
+				 * By doing so, we don't need to worry that we've turned off our
+				 * transport filter during crons, as it doesn't come into play here.
+				 */
 				$response = static::request( $url, $args, true );
 
 				if ( $response ) {
@@ -108,11 +115,20 @@ class WP_Http_Cache {
 	 */
 	static function add_cache_transport( $transports, $args, $url ) {
 
-		// If a filename has been set we're likely dealing with a download. We don't want to cache those!
-		// We also want to exclude anything with the 'wp-rest-cache' arg explicitly set to 'exclude'
+		/**
+		 * We're avoiding catching the following things in the cache:
+		 * - If a filename has been set we're likely dealing with a download.
+		 * - We also want to exclude anything with the 'wp-rest-cache' arg
+		 *   explicitly set to 'exclude'.
+		 * - We want to avoid caching things while WP CRON runs. At the moment,
+		 *   this is explicitly because a core WP cron runs on all links in a post
+		 *   on post publish, and for pingbacks it does a wp_safe_remote_get (which our
+		 *   caching would catch -- no bueno).
+		 */
 		if (
 			! empty( $args['filename'] )
 			|| ( ! empty( $args['wp-rest-cache'] ) && 'exclude' === $args['wp-rest-cache'] )
+			|| ( defined( 'DOING_CRON' ) && true === DOING_CRON )
 		) {
 			return $transports;
 		}
