@@ -119,11 +119,8 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		 */
 		public function authenticated_init() {
 			if ( is_user_logged_in() ) {
-				//Uncomment below if you have created an admin folder for admin only plugin partials
-				//Change the name below to a custom name that matches your plugin to avoid class collision
-				//require_once( $this->installed_dir . '/admin/Main_Admin.class.php' );
-				//$this->admin = new Main_Admin( $this );
-				//$this->admin->init();
+				require_once( $this->installed_dir . '/admin/class-wrc-admin.php' );
+				WRC_Admin::init();
 			}
 		}
 
@@ -137,7 +134,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 
 			// create our table if it doesn't already exist
 
-			$sql = "CREATE TABLE " . REST_CACHE_DB_PREFIX . WP_Http_Cache::$table . " (
+			$sql = "CREATE TABLE " . REST_CACHE_TABLE . " (
   `rest_md5` char(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `rest_domain` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `rest_path` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
@@ -212,6 +209,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 
 			global $wpdb;
 			define( 'REST_CACHE_DB_PREFIX', $wpdb->base_prefix );
+			define( 'REST_CACHE_TABLE', REST_CACHE_DB_PREFIX . WP_Http_Cache::$table );
 		}
 
 		/**

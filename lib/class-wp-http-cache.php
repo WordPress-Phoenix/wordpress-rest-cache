@@ -76,7 +76,7 @@ class WP_Http_Cache {
 		 * out PHP by, for example, running ten 7-second calls in a row.
 		 */
 		global $wpdb;
-		$query   = 'SELECT * FROM ' . REST_CACHE_DB_PREFIX . static::$table . ' WHERE rest_to_update = 1';
+		$query   = 'SELECT * FROM ' . REST_CACHE_TABLE . ' WHERE rest_to_update = 1';
 		$results = $wpdb->get_results( $query, ARRAY_A );
 
 		if ( is_array( $results ) && ! empty ( $results ) ) {
@@ -159,7 +159,7 @@ class WP_Http_Cache {
 	 */
 	static function get_data( $url ) {
 		global $wpdb;
-		$data = $wpdb->get_row( 'SELECT * FROM ' . REST_CACHE_DB_PREFIX . static::$table . ' WHERE rest_md5 = "' . md5( $url ) . '" ', ARRAY_A );
+		$data = $wpdb->get_row( 'SELECT * FROM ' . REST_CACHE_TABLE . ' WHERE rest_md5 = "' . md5( $url ) . '" ', ARRAY_A );
 
 		// if the query doesn't return a row from the DB, return false
 		if ( null === $data ) {
@@ -226,7 +226,7 @@ class WP_Http_Cache {
 		);
 
 		// either update or insert
-		$wpdb->replace( REST_CACHE_DB_PREFIX . static::$table, $data );
+		$wpdb->replace( REST_CACHE_TABLE, $data );
 
 		return $response;
 	}
@@ -274,7 +274,7 @@ class WP_Http_Cache {
 			$data['rest_to_update'] = 1;
 
 			global $wpdb;
-			$wpdb->replace( REST_CACHE_DB_PREFIX . static::$table, $data );
+			$wpdb->replace( REST_CACHE_TABLE, $data );
 		}
 
 	}
