@@ -52,6 +52,9 @@ class WP_Http_Cache {
 		if ( $is_multisite ) {
 			$primary_blog = get_current_site();
 			$current_blog = get_current_blog_id();
+		} else {
+			$primary_blog = 1;
+			$current_blog = 1;
 		}
 
 		/**
@@ -62,6 +65,7 @@ class WP_Http_Cache {
 			&& ! wp_next_scheduled( 'wp_rest_cache_cron' )
 		) {
 			wp_schedule_event( time(), '5_minutes', 'wp_rest_cache_cron' );
+			do_action( 'wrc_after_schedule_cron', $primary_blog, $current_blog );
 		}
 	}
 
