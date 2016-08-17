@@ -23,8 +23,12 @@ class WP_Http_Cache {
 		add_action( 'wp', array( get_called_class(), 'schedule_cron' ) );
 		add_action( 'wp_rest_cache_cron', array( get_called_class(), 'check_cache_for_updates' ) );
 		add_filter( 'cron_schedules', array( get_called_class(), 'add_schedule_interval' ) );
-		// Add a filter to available HTTP transports so that "cache" is the first thing it checks
-		add_filter( 'http_api_transports', array( get_called_class(), 'add_cache_transport' ), 2, 3 );
+
+		add_filter( 'pre_http_request', array( get_called_class(), 'filter_pre_http_request' ), 2, 3 );
+
+		// If it gets past pre_http_request and to the http response filter,
+		// check if we should create/update the data via store_data
+		add_filter( 'http_response', array( get_called_class(), 'store_data' ), 1, 3 );
 	}
 
 	/**
@@ -183,8 +187,13 @@ class WP_Http_Cache {
 	 * @return mixed
 	 */
 	static function store_data( $response, $args, $url ) {
-		// don't try to store if we don't have a 200 response
-		if ( 200 != wp_remote_retrieve_response_code( $response ) ) {
+
+		// don't try to store if we don't have a 200 response,
+		// and also skip if this isn't a cacheable call
+		if (
+			200 != wp_remote_retrieve_response_code( $response )
+			|| false === static::is_cacheable_call( $args, $url )
+		) {
 			return $response;
 		}
 
@@ -293,8 +302,6 @@ class WP_Http_Cache {
 	 * @return array|mixed|WP_Error
 	 */
 	static function request( $url, $args, $force_update = false ) {
-		// after setting the transport filter appropriately above,
-		// we'll end up in here ( WP_Http_Cache->request() ) to make the actual request
 
 		// $force_update is used when running the cron to just bypass the check for previously cached data entirely
 		if ( true !== $force_update ) {
@@ -304,16 +311,68 @@ class WP_Http_Cache {
 		// to return an uncached result and update the result in the DB, add `?WP_Http_Cache=replace` to the request
 		if ( ! empty( $cached_request['rest_response'] ) && empty( $_REQUEST['WP_Http_Cache'] ) ) {
 			return maybe_unserialize( $cached_request['rest_response'] );
-		} else {
-			// If it gets to the http response filter, check if we should create/update the data
-			add_filter( 'http_response', array( get_called_class(), 'store_data' ), 10, 3 );
-
-			$wp_request = new WP_Http_Curl();
-			$response   = $wp_request->request( $url, $args );
-
-			return $response;
 		}
 
+		return false;
+
+	}
+
+	/**
+	 * Utilize the pre_http_request filter as the filter used
+	 * previously (http_api_transports) is useless as of WP version 4.6
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param $preempt
+	 * @param $args
+	 * @param $url
+	 *
+	 * @return bool
+	 */
+	static function filter_pre_http_request( $preempt, $args, $url ) {
+
+		if ( static::is_cacheable_call( $args, $url ) ) {
+			return false;
+		}
+
+		// if we've made it past all of the above checks, continue on with running the HTTP request
+		return static::request( $url, $args );
+	}
+
+	/**
+	 * Verifies that a remote call is cacheable based on query args and URL
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param $args
+	 * @param $url
+	 *
+	 * @return bool
+	 */
+	static function is_cacheable_call( $args, $url ) {
+		if (
+			! empty( $args['filename'] )
+			|| ( ! empty( $args['wp-rest-cache'] ) && 'exclude' === $args['wp-rest-cache'] )
+			|| ( defined( 'DOING_CRON' ) && true === DOING_CRON )
+		) {
+			return false;
+		}
+
+		$method = ! empty( $args['method'] ) ? strtolower( $args['method'] ) : '';
+
+		// if the domain matches one in the exclusions list, skip it
+		$check_url  = parse_url( $url );
+		$exclusions = apply_filters( 'wp_rest_cache_exclusions', WP_REST_CACHE_EXCLUSIONS );
+		// this could end up being an array already depending on how someone filters it, only explode as necessary
+		if ( ! is_array( $exclusions ) ) {
+			$exclusions = explode( ',', $exclusions );
+		}
+
+		if ( 'get' !== $method || in_array( $check_url['host'], $exclusions ) || ! empty( $_REQUEST['force-check'] ) ) {
+			return false;
+		}
+
+		return true;
 	}
 
 }
