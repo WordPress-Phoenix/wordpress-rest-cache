@@ -1,3 +1,11 @@
+#### 0.9.0
+* Major update to core functionality: replace transports filter with `pre_http_response` and `http_response`.
+  
+  With WP 4.6, the filters previously used to hook into the remote_get functions and 
+  cache are now unusable. Functionality has been moved to utilize the `pre_http_response` and 
+  `http_response` filters instead, in each case verifying that the remote call needs to be 
+  made based on the `is_cacheable_call()` check.
+
 #### 0.8.0
 * Add an admin (or network admin, in the case of multisite) utility page to add utilities to.
 * Adjust caching mechanism to exclude `remote_get` calls made during cron. 
