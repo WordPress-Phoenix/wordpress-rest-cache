@@ -58,12 +58,16 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 
 			<div id="<?php echo static::$utilities_id; ?>">
 				<form id="wrc-util-unused" method="POST" action="" class="card">
-					<p><strong>Check a subset of results 30 days or older </strong></p>
+					<p><strong>Check a subset of results based on last request date:</strong></p>
 					<?php wp_nonce_field( static::$utilities_id, 'wrc-util-unused' ); ?>
 					<label for="wrc-unused-num">Max # of rows to return: </label>
 					<br><input type="number" value="50"
 					           name="wrc-unused-num"
 					           id="wrc-unused-num"/>
+					<br><label for="wrc-days-ago">Check for results older than # of days: </label>
+					<br><input type="number" value="30"
+					           name="wrc-days-ago"
+					           id="wrc-days-ago"/>
 					<p class="description">Limit is querying the DB, it is recommended to keep the max rows number as
 						small as possible.</p>
 					<input type="submit" id="wrc-unused-submit" value="Run" class="button-primary">
@@ -78,20 +82,28 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 						) {
 							$old_items = static::check_old_requests( $_REQUEST['wrc-unused-num'] );
 
-							if ( ! empty( $old_items ) ) {
-								echo '<hr><table style="width: 100%; text-align: left;"><thead>';
-								echo '<tr><th>Count</th><th>REST Call Domain</th></tr>';
-								echo '</thead><tbody>';
 
+							echo '<hr><table style="width: 100%; text-align: left;"><thead>';
+							echo '<tr><th>Count</th><th>REST Call Domain</th></tr>';
+							echo '</thead><tbody>';
+
+							if ( ! empty( $old_items ) ) {
 								foreach ( $old_items as $old_item ) {
 									echo '<tr>';
 									echo '<td>' . $old_item['count'] . '</td>';
 									echo '<td>' . $old_item['rest_domain'] . '</td>';
 									echo '</tr>';
 								}
-
-								echo '</tbody></table>';
+							} else {
+								echo '<tr>';
+								echo '<td colspan="2"><p><em>';
+								echo 'There are no items with a last request date of more than ' . (int) $_REQUEST['wrc-days-ago'] . ' day(s) ago';
+								echo '</em></p></td>';
+								echo '</tr>';
 							}
+
+							echo '</tbody></table>';
+
 						}
 						?>
 
@@ -112,19 +124,22 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 			if (
 				wp_verify_nonce( $_REQUEST['wrc-util-unused'], static::$utilities_id )
 				&& ! empty( $_REQUEST['wrc-unused-num'] )
+				&& ! empty( $_REQUEST['wrc-days-ago'] )
 			) {
 				global $wpdb;
-				$thirty_days_ago = date( 'Y-m-d', strtotime( '30 days ago' ) );
+
+				$days_ago = (int) $_REQUEST['wrc-days-ago'];
+				$days_ago = date( 'Y-m-d', strtotime( $days_ago . ' days ago' ) );
 
 				$sql = '
 			SELECT COUNT(*) count, rest_domain 
 			FROM   ' . REST_CACHE_TABLE . ' 
-			WHERE rest_last_requested < "' . $thirty_days_ago . '" 
+			WHERE rest_last_requested < "' . $days_ago . '" 
 			GROUP BY rest_domain 
 			ORDER BY count DESC LIMIT ' . (int) $limit . ';
 			';
 
-				return $wpdb->get_results( $wpdb->prepare( $sql ), ARRAY_A );
+				return $wpdb->get_results( $sql, ARRAY_A );
 			}
 
 			return false;
