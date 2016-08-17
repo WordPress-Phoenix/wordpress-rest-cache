@@ -36,6 +36,9 @@ if ( ! defined( 'WP_REST_CACHE_EXCLUSIONS' ) ) {
 if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 	class WP_Rest_Cache {
 		public $installed_dir;
+		static $table = 'rest_cache'; // the prefix is appended once we have access to the $wpdb global
+		static $columns = 'rest_md5,rest_domain,rest_path,rest_response,rest_expires,rest_last_requested,rest_tag,rest_to_update';
+
 
 		/**
 		 * Construct the plugin object
@@ -47,21 +50,6 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 
 			// hook can be used by mu plugins to modify plugin behavior after plugin is setup
 			do_action( get_called_class() . '_preface', $this );
-
-			//simplify getting site options with custom prefix with multisite compatibility
-			if ( ! function_exists( 'get_custom_option' ) ) {
-				// builds  the function in global scope
-				function get_custom_option( $s = '', $network_option = false ) {
-					if ( $network_option ) {
-						return get_site_option( REST_SITEOPTION_PREFIX . $s );
-					} else {
-						return get_option( REST_SITEOPTION_PREFIX . $s );
-					}
-				}
-			}
-
-			// Always load libraries first
-			$this->load_libary();
 
 			// configure and setup the plugin class variables
 			$this->configure_defaults();
@@ -183,33 +171,15 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			require_once( 'class-wrc-autoloader.php');
 		}
 
-		/**
-		 * Load all files from /lib/ that match extensions like filename.class.php
-		 * @TODO: Move to using spl_autoload_register
-		 *
-		 * @since   0.1
-		 * @return  void
-		 */
-		protected function load_libary() {
-			// TODO: set up autoloader for all files in /lib, we're individually requiring at the moment
-			require_once( $this->installed_dir . '/lib/class-wp-http-cache.php' );
-		}
-
 		protected function defines_and_globals() {
-			
+			global $wpdb;
+			define( 'REST_CACHE_DB_PREFIX', $wpdb->base_prefix );
+			define( 'REST_CACHE_TABLE', REST_CACHE_DB_PREFIX . static::$table );
 		}
 
 		protected function configure_defaults() {
-			// Setup plugins global params
-			define( 'REST_SITEOPTION_PREFIX', 'rest_cache' );
-			$this->modules        = new stdClass();
-			$this->modules->count = 0;
 			$this->installed_dir  = dirname( __FILE__ );
 			$this->installed_url  = plugins_url( '/', __FILE__ );
-
-			global $wpdb;
-			define( 'REST_CACHE_DB_PREFIX', $wpdb->base_prefix );
-			define( 'REST_CACHE_TABLE', REST_CACHE_DB_PREFIX . WP_Http_Cache::$table );
 		}
 
 		/**

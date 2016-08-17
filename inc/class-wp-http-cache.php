@@ -3,14 +3,13 @@
 /**
  * Class WP_Http_Cache
  *
- * Name of class must stay prefixed with WP_Http to work with WordPress transport filters
+ * While this class used to hook into the Http Transports,
+ * as of WordPress 4.6 it now uses pre_http_request and http_requests
+ * filter since the transports filter is no longer used.
  *
- * TODO: consider "paginating" the cached updating via cron. Currently one cron executes to loop over the rows that
- * need new calls/updates
+ * TODO: consider "paginating" the cached updating via cron. Currently one cron executes to loop over the rows that need new calls/updates
  */
 class WP_Http_Cache {
-	static $table = 'rest_cache'; // the prefix is appended once we have access to the $wpdb global
-	static $columns = 'rest_md5,rest_domain,rest_path,rest_response,rest_expires,rest_last_requested,rest_tag,rest_to_update';
 	static $default_expires = 600; // defaults to 10 minutes, this is always in seconds
 
 	/**
@@ -34,6 +33,8 @@ class WP_Http_Cache {
 	/**
 	 * Create the interval that we need for our cron that checks in on rest data.
 	 *
+	 * @since 0.1.0
+	 *
 	 * @param $schedules
 	 *
 	 * @return mixed
@@ -49,7 +50,11 @@ class WP_Http_Cache {
 	}
 
 	/**
-	 * Set up the initial cron.
+	 * Set up the initial cron
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return void
 	 */
 	static function schedule_cron() {
 		$is_multisite = is_multisite();
@@ -75,6 +80,10 @@ class WP_Http_Cache {
 
 	/**
 	 * Check the cache table for rows that need updated during our cron.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return void
 	 */
 	static function check_cache_for_updates() {
 		/**
@@ -113,53 +122,9 @@ class WP_Http_Cache {
 	}
 
 	/**
-	 * Prepend the transports array with our custom cache transport
-	 *
-	 * @param $transports
-	 * @param $args
-	 * @param $url
-	 *
-	 * @return array
-	 */
-	static function add_cache_transport( $transports, $args, $url ) {
-
-		/**
-		 * We're avoiding catching the following things in the cache:
-		 * - If a filename has been set we're likely dealing with a download.
-		 * - We also want to exclude anything with the 'wp-rest-cache' arg
-		 *   explicitly set to 'exclude'.
-		 * - We want to avoid caching things while WP CRON runs. At the moment,
-		 *   this is explicitly because a core WP cron runs on all links in a post
-		 *   on post publish, and for pingbacks it does a wp_safe_remote_get (which our
-		 *   caching would catch -- no bueno).
-		 */
-		if (
-			! empty( $args['filename'] )
-			|| ( ! empty( $args['wp-rest-cache'] ) && 'exclude' === $args['wp-rest-cache'] )
-			|| ( defined( 'DOING_CRON' ) && true === DOING_CRON )
-		) {
-			return $transports;
-		}
-
-		$method = ! empty( $args['method'] ) ? strtolower( $args['method'] ) : '';
-
-		// if the domain matches one in the exclusions list, skip it
-		$check_url  = parse_url( $url );
-		$exclusions = apply_filters( 'wp_rest_cache_exclusions', WP_REST_CACHE_EXCLUSIONS );
-		// this could end up being an array already depending on how someone filters it, only explode as necessary
-		if ( ! is_array( $exclusions ) ) {
-			$exclusions = explode( ',', $exclusions );
-		}
-
-		if ( 'get' === $method && ! in_array( $check_url['host'], $exclusions ) && empty( $_REQUEST['force-check'] ) ) {
-			$transports = array_merge( array( 'cache' ), $transports );
-		}
-
-		return $transports;
-	}
-
-	/**
 	 * Pull the cached data row from our custom table by matching the md5'd URL
+	 *
+	 * @since 0.1.0
 	 *
 	 * @param $url
 	 *
@@ -179,6 +144,8 @@ class WP_Http_Cache {
 
 	/**
 	 * Save or update cached data in our custom table based on the md5'd URL
+	 *
+	 * @since 0.1.0
 	 *
 	 * @param $response
 	 * @param $args
@@ -245,14 +212,15 @@ class WP_Http_Cache {
 	}
 
 	/**
-	 * Class used to tell core that this is a valid HTTP transport module
+	 * Check to see if we've already got this call stored and if it's expired
 	 *
-	 * @return bool
+	 * @since 0.1.0
+	 *
+	 * @param $url
+	 * @param $args
+	 *
+	 * @return array|bool|null|object|void
 	 */
-	static function test() {
-		return true;
-	}
-
 	public static function maybe_cached_request( $url, $args ) {
 		$data = static::get_data( $url );
 
@@ -270,10 +238,10 @@ class WP_Http_Cache {
 	 * Compares the current time in the row returned from static::get_data()
 	 * We're also documenting the "rest_last_requested" info here
 	 *
-	 * @param $data The full result from get_data, passed in via maybe_cached_request
-	 * @param $args Args passed into the initial request
+	 * @param array $data The full result from get_data, passed in via maybe_cached_request
+	 * @param array $args Args passed into the initial request
 	 *
-	 * @since 1.0
+	 * @since 0.1.0
 	 */
 	protected static function check_for_expired_result( $data, $args ) {
 		/**
@@ -294,6 +262,8 @@ class WP_Http_Cache {
 
 	/**
 	 * Either return a cached result or run an HTTP curl request
+	 *
+	 * @since 0.1.0
 	 *
 	 * @param      $url
 	 * @param      $args
