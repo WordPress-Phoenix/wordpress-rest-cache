@@ -5,6 +5,7 @@
   cache are now unusable. Functionality has been moved to utilize the `pre_http_response` and 
   `http_response` filters instead, in each case verifying that the remote call needs to be 
   made based on the `is_cacheable_call()` check.
+* New admin page helpers to identify old/unused calls and to search and clear specific calls.
 
 #### 0.8.0
 * Add an admin (or network admin, in the case of multisite) utility page to add utilities to.
