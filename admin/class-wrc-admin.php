@@ -56,18 +56,18 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 
 			if ( ! empty( $_REQUEST['wrc-entry-delete'] ) ) {
 				$deleted = static::delete_by_md5( $_REQUEST['wrc-entry-delete'] );
-				
-				if (  false !== $deleted ) {
+
+				if ( false !== $deleted ) {
 					echo '<div class="updated"><p>The following entry was deleted:';
 					echo '<pre>';
-					var_dump( $deleted );
+					var_export( $deleted );
 					echo '</pre>';
 					echo '</p></div>';
-					
+
 				} else {
 					echo '<div class="error"><p>Oops, looks like there was an issue deleting that entry.</p></div>';
 				}
-				
+
 			}
 
 			?>
@@ -176,10 +176,10 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 							if ( ! empty( $returned_items ) ) {
 								foreach ( $returned_items as $item ) {
 									echo '<tr>';
-									echo '<td>' . $item['rest_md5'] . '</td>';
 									echo '<td>' . $item['rest_domain'] . '</td>';
 									echo '<td>' . $item['rest_path'] . '</td>';
-									echo '<td><a href="' . $admin_url . '&wrc-entry-delete=' . $item['rest_md5'] . '">Delete</a></td>';
+									echo '<td><form method="post" action="" id="delete_' . $item['rest_md5'] . '"><button type="submit" name="wrc-entry-delete" value="' . $item['rest_md5'] . '">Delete</button></form></td>';
+									echo '<td>' . $item['rest_md5'] . '</td>';
 									echo '</tr>';
 								}
 							} else {
@@ -263,9 +263,9 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 					$sql .= 'WHERE rest_domain = "' . esc_url( $domain ) . '" ';
 				}
 				if ( ! empty( $domain ) && ! empty( $path ) ) {
-					$sql .= 'AND rest_path = "' . esc_attr( $path ) . '" ';
+					$sql .= 'AND rest_path = "' . sanitize_text_field( $path ) . '" ';
 				} elseif ( ! empty( $path ) ) {
-					$sql .= 'WHERE  rest_path = "' . esc_attr( $path ) . '" ';
+					$sql .= 'WHERE  rest_path = "' . sanitize_text_field( $path ) . '" ';
 				}
 
 				$sql .= 'ORDER BY rest_path DESC LIMIT ' . intval( $limit ) . ';
@@ -299,7 +299,7 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 
 				$delete_it = $wpdb->get_results( $delete, ARRAY_A );
 
-				return $select_result;
+				return $select_result[0];
 			}
 
 			return false;
