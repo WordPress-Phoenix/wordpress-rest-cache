@@ -106,11 +106,12 @@ class WP_Http_Cache {
 				}
 
 				/**
-				 * Get a response by going directly to our own request() function.
-				 * By doing so, we don't need to worry that we've turned off our
-				 * transport filter during crons, as it doesn't come into play here.
+				 * Make the call as a wp_safe_remote_get - the response will be saved when we run
+				 * `apply_filters( 'http_response', $response, $args, $url )` below
 				 */
-				$response = static::request( $url, $args, true );
+				$response = wp_safe_remote_get( $url, $args );
+
+				//
 
 				if ( $response ) {
 					// manually apply the http_response filters as they won't get applied when the cron runs for some reason
@@ -119,6 +120,7 @@ class WP_Http_Cache {
 			}
 		}
 
+		return;
 	}
 
 	/**
@@ -164,8 +166,7 @@ class WP_Http_Cache {
 			return $response;
 		}
 
-		// TODO: consider how we'll skip data storage.. maybe if expires is set to zero?
-		// if no "expires" argument is set for now, it gets set to default
+		// if no cache expiration is set, we'll set the default expiration time
 		if ( empty( $args['wp-rest-cache']['expires'] ) ) {
 			$args['wp-rest-cache']['expires'] = static::$default_expires;
 		}
@@ -267,19 +268,14 @@ class WP_Http_Cache {
 	 *
 	 * @param      $url
 	 * @param      $args
-	 * @param bool $force_update
 	 *
 	 * @return array|mixed|WP_Error
 	 */
-	static function request( $url, $args, $force_update = false ) {
+	static function request( $url, $args ) {
 
-		// $force_update is used when running the cron to just bypass the check for previously cached data entirely
-		if ( true !== $force_update ) {
-			$cached_request = static::maybe_cached_request( $url, $args );
-		}
+		$cached_request = static::maybe_cached_request( $url, $args );
 
-		// to return an uncached result and update the result in the DB, add `?WP_Http_Cache=replace` to the request
-		if ( ! empty( $cached_request['rest_response'] ) && empty( $_REQUEST['WP_Http_Cache'] ) ) {
+		if ( ! empty( $cached_request['rest_response'] ) ) {
 			return maybe_unserialize( $cached_request['rest_response'] );
 		}
 
@@ -301,11 +297,22 @@ class WP_Http_Cache {
 	 */
 	static function filter_pre_http_request( $preempt, $args, $url ) {
 
-		if ( static::is_cacheable_call( $args, $url ) ) {
+		/**
+		 * Returning false will simply allow the request to continue,
+		 * though we'll need to be sure to remove the other http_request
+		 * filter so that doesn't get run.
+		 */
+		if ( ! static::is_cacheable_call( $args, $url ) ) {
+			remove_filter( 'http_response', array( get_called_class(), 'store_data' ), 1 );
 			return false;
 		}
 
 		// if we've made it past all of the above checks, continue on with running the HTTP request
+		/**
+		 * If this is indeed a cacheable request, return our request function which
+		 * will either return 'false' if the actual request still needs to be made or
+		 * it will return the cached result.
+		 */
 		return static::request( $url, $args );
 	}
 
@@ -323,7 +330,6 @@ class WP_Http_Cache {
 		if (
 			! empty( $args['filename'] )
 			|| ( ! empty( $args['wp-rest-cache'] ) && 'exclude' === $args['wp-rest-cache'] )
-			|| ( defined( 'DOING_CRON' ) && true === DOING_CRON )
 		) {
 			return false;
 		}
