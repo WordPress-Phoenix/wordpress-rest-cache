@@ -170,7 +170,7 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 							}
 
 							echo '<hr><table style="width: 100%; text-align: left;"><thead>';
-							echo '<tr><th>MD5</th><th>REST Call Domain</th><th>REST Call Path</th><th></th></tr>';
+							echo '<tr><th>REST Call Domain</th><th>REST Call Path</th><th></th><th>md5</th></tr>';
 							echo '</thead><tbody>';
 
 							if ( ! empty( $returned_items ) ) {

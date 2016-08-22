@@ -1,3 +1,6 @@
+#### 0.9.1
+* Bugfix: correct mis-labeled admin helper table columns
+
 #### 0.9.0
 * Major update to core functionality: replace transports filter with `pre_http_response` and `http_response`.
   
