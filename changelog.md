@@ -1,3 +1,7 @@
+#### 0.10.0
+* Major bugfix: Cached values were never properly updating. Fixed with better code organization 
+  and a clearer update-via-cron process!
+
 #### 0.9.1
 * Bugfix: correct mis-labeled admin helper table columns
 
