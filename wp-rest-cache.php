@@ -38,7 +38,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		public $installed_dir;
 		static $table = 'rest_cache'; // the prefix is appended once we have access to the $wpdb global
 		static $columns = 'rest_md5,rest_domain,rest_path,rest_response,rest_expires,rest_last_requested,rest_tag,rest_to_update';
-
+		static $default_expires = 600; // defaults to 10 minutes, this is always in seconds
 
 		/**
 		 * Construct the plugin object
@@ -84,10 +84,16 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		public function init() {
 
 			do_action( get_called_class() . '_before_init' );
-			
-			if ( class_exists( 'WP_Http_Cache' ) ) {
-				WP_Http_Cache::init();
+			if ( ! defined( 'NO_WP_REST_CACHE' ) ) {
+				if ( class_exists( 'WRC_Caching' ) ) {
+					WRC_Caching::init();
+				}
+
+				if ( class_exists( 'WRC_Cron' ) ) {
+					WRC_Cron::init();
+				}
 			}
+
 
 			if ( class_exists( 'WRC_Filters' ) ) {
 				WRC_Filters::init();
