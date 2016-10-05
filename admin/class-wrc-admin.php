@@ -75,7 +75,97 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 			<h1>WP REST Cache Utilities</h1>
 
 			<div id="<?php echo static::$utilities_id; ?>">
-				<form id="wrc-util-unused" method="POST" action="" class="card" style="max-width: 100%;">
+				<?php self::print_search_util(); ?>
+				<?php self::print_old_requests_form(); ?>
+				<div style="margin-top: 40px;">
+					<?php
+					if ( ! empty( $_REQUEST['wrc-phpinfo'] ) ) {
+						phpinfo();
+					}
+					?>
+				</div>
+			</div>
+			<?php
+		}
+
+		/**
+		 *
+		 */
+		static protected function print_search_util() {
+			?>
+			<form id="wrc-util-search" method="POST" action="" class="card" style="max-width: 100%;">
+					<p><strong>Search for a specific request:</strong></p>
+					<?php wp_nonce_field( static::$utilities_id, 'wrc-util-search' ); ?>
+					<label for="wrc-limit-num">Max # of rows to return: </label>
+					<br><input type="number" value="10"
+					           name="wrc-limit-num"
+					           id="wrc-limit-num"/>
+					<br><label for="wrc-search-rest-domain">REST Call Domain (ex: <em>https://api.fansided.com</em>):
+					</label>
+					<br><input type="text" style="width: 100%;"
+					           value="<?php echo isset( $_REQUEST['wrc-search-rest-domain'] ) ? $_REQUEST['wrc-search-rest-domain'] : 'https://api.fansided.com'; ?>"
+					           name="wrc-search-rest-domain"
+					           id="wrc-search-rest-domain"/>
+					<br><label for="wrc-search-rest-path">REST Call Path (ex: <em>/v2/topics/</em>): </label>
+					<br><input type="text" style="width: 100%;"
+					           value="<?php echo isset( $_REQUEST['wrc-search-rest-path'] ) ? $_REQUEST['wrc-search-rest-path'] : '/v2/topics/'; ?>"
+					           name="wrc-search-rest-path"
+					           id="wrc-search-rest-path"/>
+					<p><em>Both the Domain and Path fields are searched on an EQUALS basis to help deal with DB search
+							performance.</em></p>
+					<input type="submit" id="wrc-util-search-submit" value="Run" class="button-primary">
+					<br>
+					<div class="results">
+
+						<?php
+						if (
+							! empty( $_REQUEST['wrc-util-search'] )
+							&& wp_verify_nonce( $_REQUEST['wrc-util-search'], static::$utilities_id )
+							&& ! empty( $_REQUEST['wrc-limit-num'] )
+							&& ( ! empty( $_REQUEST['wrc-search-rest-domain'] ) || ! empty( $_REQUEST['wrc-search-rest-path'] ) )
+						) {
+							$searched_domain = ! empty( $_REQUEST['wrc-search-rest-domain'] ) ? $_REQUEST['wrc-search-rest-domain'] : '';
+							$searched_path   = ! empty( $_REQUEST['wrc-search-rest-path'] ) ? $_REQUEST['wrc-search-rest-path'] : '';
+							$query_args = array( 'domain' => $searched_domain, 'path' => $searched_path );
+							$returned_items  = static::query_rest_table( $_REQUEST['wrc-limit-num'], $query_args );
+
+							echo '<hr><table style="width: 100%; text-align: left;"><thead>';
+							echo '<tr><th>REST Call Domain</th><th>REST Call Path</th><th></th><th>md5</th></tr>';
+							echo '</thead><tbody>';
+
+							if ( ! empty( $returned_items ) ) {
+								foreach ( $returned_items as $item ) {
+									echo '<tr>';
+									echo '<td>' . $item['rest_domain'] . '</td>';
+									echo '<td>' . $item['rest_path'] . '</td>';
+									echo '<td><form method="post" action="" id="delete_' . $item['rest_md5'] . '"><button type="submit" name="wrc-entry-delete" value="' . $item['rest_md5'] . '">Delete</button></form></td>';
+									echo '<td>' . $item['rest_md5'] . '</td>';
+									echo '</tr>';
+								}
+							} else {
+								echo '<tr>';
+								echo '<td colspan="4"><p><em>';
+								echo 'There are no items that match your search for <em>' . $searched_domain . $searched_path . '</em>';
+								echo '</em></p></td>';
+								echo '</tr>';
+							}
+
+							echo '</tbody></table>';
+
+						}
+						?>
+
+					</div>
+				</form>
+			<?php
+		}
+
+		/**
+		 * A form that is used in the admin page to print cache table results based on last request date
+		 */
+		static function print_old_requests_form() {
+			?>
+			<form id="wrc-util-unused" method="POST" action="" class="card" style="max-width: 100%;">
 					<p><strong>Check a subset of results based on last request date:</strong></p>
 					<?php wp_nonce_field( static::$utilities_id, 'wrc-util-unused' ); ?>
 					<label for="wrc-unused-num">Max # of rows to return: </label>
@@ -127,84 +217,6 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 
 					</div>
 				</form>
-
-				<form id="wrc-util-search" method="POST" action="" class="card" style="max-width: 100%;">
-					<p><strong>Search for a specific request:</strong></p>
-					<?php wp_nonce_field( static::$utilities_id, 'wrc-util-search' ); ?>
-					<label for="wrc-limit-num">Max # of rows to return: </label>
-					<br><input type="number" value="10"
-					           name="wrc-limit-num"
-					           id="wrc-limit-num"/>
-					<br><label for="wrc-search-rest-domain">REST Call Domain (ex: <em>https://api.fansided.com</em>):
-					</label>
-					<br><input type="text" style="width: 100%;"
-					           value="<?php echo isset( $_REQUEST['wrc-search-rest-domain'] ) ? $_REQUEST['wrc-search-rest-domain'] : 'https://api.fansided.com'; ?>"
-					           name="wrc-search-rest-domain"
-					           id="wrc-search-rest-domain"/>
-					<br><label for="wrc-search-rest-path">REST Call Path (ex: <em>/v2/topics/</em>): </label>
-					<br><input type="text" style="width: 100%;"
-					           value="<?php echo isset( $_REQUEST['wrc-search-rest-path'] ) ? $_REQUEST['wrc-search-rest-path'] : '/v2/topics/'; ?>"
-					           name="wrc-search-rest-path"
-					           id="wrc-search-rest-path"/>
-					<p><em>Both the Domain and Path fields are searched on an EQUALS basis to help deal with DB search
-							performance.</em></p>
-					<input type="submit" id="wrc-util-search-submit" value="Run" class="button-primary">
-					<br>
-					<div class="results">
-
-						<?php
-						if (
-							! empty( $_REQUEST['wrc-util-search'] )
-							&& wp_verify_nonce( $_REQUEST['wrc-util-search'], static::$utilities_id )
-							&& ! empty( $_REQUEST['wrc-limit-num'] )
-							&& ( ! empty( $_REQUEST['wrc-search-rest-domain'] ) || ! empty( $_REQUEST['wrc-search-rest-path'] ) )
-						) {
-							$searched_domain = ! empty( $_REQUEST['wrc-search-rest-domain'] ) ? $_REQUEST['wrc-search-rest-domain'] : '';
-							$searched_path   = ! empty( $_REQUEST['wrc-search-rest-path'] ) ? $_REQUEST['wrc-search-rest-path'] : '';
-							$returned_items  = static::query_rest_table( $_REQUEST['wrc-limit-num'], $searched_domain, $searched_path );
-
-							if ( is_multisite() ) {
-								$admin_url = network_admin_url( 'settings.php?page=' . self::$admin_page_slug );
-							} else {
-								$admin_url = admin_url( 'tools.php?page=' . self::$admin_page_slug );
-							}
-
-							echo '<hr><table style="width: 100%; text-align: left;"><thead>';
-							echo '<tr><th>REST Call Domain</th><th>REST Call Path</th><th></th><th>md5</th></tr>';
-							echo '</thead><tbody>';
-
-							if ( ! empty( $returned_items ) ) {
-								foreach ( $returned_items as $item ) {
-									echo '<tr>';
-									echo '<td>' . $item['rest_domain'] . '</td>';
-									echo '<td>' . $item['rest_path'] . '</td>';
-									echo '<td><form method="post" action="" id="delete_' . $item['rest_md5'] . '"><button type="submit" name="wrc-entry-delete" value="' . $item['rest_md5'] . '">Delete</button></form></td>';
-									echo '<td>' . $item['rest_md5'] . '</td>';
-									echo '</tr>';
-								}
-							} else {
-								echo '<tr>';
-								echo '<td colspan="4"><p><em>';
-								echo 'There are no items that match your search for <em>' . $searched_domain . $searched_path . '</em>';
-								echo '</em></p></td>';
-								echo '</tr>';
-							}
-
-							echo '</tbody></table>';
-
-						}
-						?>
-
-					</div>
-				</form>
-				<div style="margin-top: 40px;">
-					<?php
-					if ( ! empty( $_REQUEST['wrc-phpinfo'] ) ) {
-						phpinfo();
-					}
-					?>
-				</div>
-			</div>
 			<?php
 		}
 
@@ -243,29 +255,28 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 		/**
 		 * Return an array of rows from the rest table based on domain and path
 		 *
-		 * @param int $limit
-		 * @param     $domain
-		 * @param     $path
+		 * @param int   $limit
+		 * @param array $args
 		 *
 		 * @return array|bool|null|object
 		 */
-		static function query_rest_table( $limit = 10, $domain, $path ) {
+		static function query_rest_table( $limit = 10, $args ) {
 			if (
 				wp_verify_nonce( $_REQUEST['wrc-util-search'], static::$utilities_id )
-				&& ( ! empty( $domain ) || ! empty( $path ) ) // verify that at least one of the required items is not empty
+				&& ( ! empty( $args['domain'] ) || ! empty( $args['path'] ) ) // verify that at least one of the required items is not empty
 			) {
 				global $wpdb;
 
 				$sql = '
 			SELECT rest_md5, rest_domain, rest_path 
 			FROM   ' . REST_CACHE_TABLE . ' ';
-				if ( ! empty( $domain ) ) {
-					$sql .= 'WHERE rest_domain = "' . esc_url( $domain ) . '" ';
+				if ( ! empty( $args['domain'] ) ) {
+					$sql .= 'WHERE rest_domain = "' . esc_url( $args['domain'] ) . '" ';
 				}
-				if ( ! empty( $domain ) && ! empty( $path ) ) {
-					$sql .= 'AND rest_path = "' . sanitize_text_field( $path ) . '" ';
-				} elseif ( ! empty( $path ) ) {
-					$sql .= 'WHERE  rest_path = "' . sanitize_text_field( $path ) . '" ';
+				if ( ! empty( $args['domain'] ) && ! empty( $args['path'] ) ) {
+					$sql .= 'AND rest_path = "' . sanitize_text_field( $args['path'] ) . '" ';
+				} elseif ( ! empty( $args['path'] ) ) {
+					$sql .= 'WHERE  rest_path = "' . sanitize_text_field( $args['path'] ) . '" ';
 				}
 
 				$sql .= 'ORDER BY rest_path DESC LIMIT ' . intval( $limit ) . ';
