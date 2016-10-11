@@ -64,6 +64,8 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			// nesting actions/filters within the init action was causing the transport filter to run too late in some cases
 			$this->init();
 
+			add_action( 'before_ghu_delete_all_transients', array( 'WRC_Utility', 'clear_ghu_cache') );
+
 			// init for use with logged in users, see this::authenticated_init for more details
 			add_action( 'init', array( $this, 'authenticated_init' ) );
 
