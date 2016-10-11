@@ -8,6 +8,14 @@
  */
 class WRC_Utility {
 
+	/**
+	 * Utility to easily delete cache by exact column value
+	 *
+	 * @param $column
+	 * @param $value
+	 *
+	 * @return false|int
+	 */
 	public static function clear_cache_by( $column, $value ) {
 		global $wpdb;
 
@@ -19,8 +27,14 @@ class WRC_Utility {
 	 *
 	 * @return false|int number of deleted cache rows
 	 */
-	public static function clear_ghu_cache() {
-		self::clear_cache_by( 'rest_domain', 'https://api.github.com' );
+	public static function clear_ghu_cache( $type = '' ) {
+		// only run on plugins since that action happens first
+		// if it runs on themes it will delete plugin cache twice
+		if ( ! empty( $type ) && 'plugin' === $type ) {
+			return self::clear_cache_by( 'rest_domain', 'https://api.github.com' );
+		}
+
+		return false;
 	}
 
 }

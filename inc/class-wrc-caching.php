@@ -17,10 +17,10 @@ class WRC_Caching {
 	static function init() {
 		// ensure our filters don't run during crons
 		if ( ! defined( 'DOING_CRON' ) ) {
-			add_filter( 'pre_http_request', array( get_called_class(), 'pre_http_request' ), 2, 3 );
+			add_filter( 'pre_http_request', array( get_called_class(), 'pre_http_request' ), 9, 3 );
 			// If it gets past pre_http_request and to the http response filter,
 			// check if we should create/update the data via store_data
-			add_filter( 'http_response', array( get_called_class(), 'store_data' ), 1, 3 );
+			add_filter( 'http_response', array( get_called_class(), 'store_data' ), 9, 3 );
 		}
 	}
 
@@ -187,7 +187,7 @@ class WRC_Caching {
 			return maybe_unserialize( $cached_request['rest_response'] );
 		}
 
-		// false is returned because it tells the `pre_http_request` filter that it needs to move on to theactual http request
+		// false is returned because it tells the `pre_http_request` filter that it needs to move on to the actual http request
 		return false;
 	}
 
