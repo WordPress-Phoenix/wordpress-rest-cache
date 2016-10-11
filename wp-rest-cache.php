@@ -131,14 +131,14 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			// create our table if it doesn't already exist
 
 			$sql = "CREATE TABLE " . REST_CACHE_TABLE . " (
-  `rest_md5` char(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `rest_domain` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `rest_path` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `rest_response` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `rest_expires` datetime DEFAULT NULL,
   `rest_last_requested` date NOT NULL,
-  `rest_tag` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `rest_expires` datetime DEFAULT NULL,
+  `rest_domain` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `rest_path` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `rest_response` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rest_tag` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `rest_to_update` tinyint(1) DEFAULT '0',
+  `rest_md5` char(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `rest_args` longtext COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`rest_md5`),
   KEY `rest_domain` (`rest_domain`(191),`rest_path`(191)),
