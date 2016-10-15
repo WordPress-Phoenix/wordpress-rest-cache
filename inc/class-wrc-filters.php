@@ -27,7 +27,7 @@ class WRC_Filters {
 	 * Admin only filters are registered
 	 */
 	static function admin_filters() {
-
+		add_filter( 'ghu_use_remote_call_transients', '__return_false' );
 	}
 
 	/**

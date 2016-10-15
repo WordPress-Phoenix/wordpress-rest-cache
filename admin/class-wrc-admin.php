@@ -55,7 +55,7 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 		static function options_page() {
 
 			if ( ! empty( $_REQUEST['wrc-entry-delete'] ) ) {
-				$deleted = static::delete_by_md5( $_REQUEST['wrc-entry-delete'] );
+				$deleted = WRC_Utility::clear_cache_by( 'rest_md5', $_REQUEST['wrc-entry-delete'] );
 
 				if ( false !== $deleted ) {
 					echo '<div class="updated"><p>The following entry was deleted:';
@@ -272,34 +272,6 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 			';
 
 				return $wpdb->get_results( $sql, ARRAY_A );
-			}
-
-			return false;
-		}
-
-		static function delete_by_md5( $md5 ) {
-			global $wpdb;
-
-			$select = '
-			SELECT rest_md5, rest_domain, rest_path
-			FROM   ' . REST_CACHE_TABLE . '
-			WHERE rest_md5 = "' . esc_attr( $md5 ) . '" 
-			LIMIT 1;
-			';
-
-			$select_result = $wpdb->get_results( $select, ARRAY_A );
-
-			if ( ! empty( $select_result ) ) {
-				$delete = '
-				DELETE
-				FROM   ' . REST_CACHE_TABLE . '
-				WHERE rest_md5 = "' . esc_attr( $md5 ) . '" 
-				LIMIT 1;
-				';
-
-				$delete_it = $wpdb->get_results( $delete, ARRAY_A );
-
-				return $select_result[0];
 			}
 
 			return false;

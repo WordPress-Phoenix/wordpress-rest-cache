@@ -1,3 +1,7 @@
+#### 1.0.0
+* Tested in production at scale for several days, ready to call plugin released and out of beta
+* Fixed github updater double caching issues and removed transients from GHU to reduce transient cache overhead, especially useful for reducing VARNISH / REDIS bandwidth issues.
+
 #### 0.10.0
 * Major bugfix: Cached values were never properly updating. Fixed with better code organization 
   and a clearer update-via-cron process!

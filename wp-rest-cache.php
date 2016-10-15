@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/WordPress-Phoenix/wordpress-rest-cache
  * Description: A solution to caching REST data calls without relying on transients or wp_options tables. Note: for multisite "Network Activate", table may need manually created before activation.
  * Author: scarstens
- * Version: 0.10.0
+ * Version: 1.0.0
  * Author URI: http://github.com/scarstens
  * License: GPL V2
  * Text Domain: rest_cache
@@ -63,6 +63,8 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			// initialize not by adding an action but by running init function that adds its own actions/filters
 			// nesting actions/filters within the init action was causing the transport filter to run too late in some cases
 			$this->init();
+
+			add_action( 'before_ghu_delete_all_transients', array( 'WRC_Utility', 'clear_ghu_cache') );
 
 			// init for use with logged in users, see this::authenticated_init for more details
 			add_action( 'init', array( $this, 'authenticated_init' ) );
@@ -129,14 +131,14 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			// create our table if it doesn't already exist
 
 			$sql = "CREATE TABLE " . REST_CACHE_TABLE . " (
-  `rest_md5` char(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `rest_domain` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `rest_path` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `rest_response` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `rest_expires` datetime DEFAULT NULL,
   `rest_last_requested` date NOT NULL,
-  `rest_tag` varchar(1055) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `rest_expires` datetime DEFAULT NULL,
+  `rest_domain` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `rest_path` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `rest_response` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rest_tag` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `rest_to_update` tinyint(1) DEFAULT '0',
+  `rest_md5` char(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `rest_args` longtext COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`rest_md5`),
   KEY `rest_domain` (`rest_domain`(191),`rest_path`(191)),
