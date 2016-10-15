@@ -30,7 +30,7 @@ class WRC_Utility {
 	public static function clear_ghu_cache( $type = '' ) {
 		// only run on plugins since that action happens first
 		// if it runs on themes it will delete plugin cache twice
-		if ( ! empty( $type ) && 'plugin' === $type ) {
+		if ( ! empty( $type ) && 'plugins' === $type ) {
 			return self::clear_cache_by( 'rest_domain', 'https://api.github.com' );
 		}
 
