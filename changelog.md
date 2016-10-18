@@ -1,3 +1,6 @@
+#### 1.0.3
+* Version bump fixes
+
 #### 1.0.2
 * More GHU Transient Changes
 
