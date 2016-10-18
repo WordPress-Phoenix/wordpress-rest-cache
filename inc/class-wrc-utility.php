@@ -25,16 +25,10 @@ class WRC_Utility {
 	/**
 	 * Deletes all github api calls from the rest cache to operate with afragen/github-updater plugin
 	 *
-	 * @return false|int number of deleted cache rows
+	 * @return int number of deleted cache rows
 	 */
-	public static function clear_ghu_cache( $type = '' ) {
-		// only run on plugins since that action happens first
-		// if it runs on themes it will delete plugin cache twice
-		if ( ! empty( $type ) && 'plugins' === $type ) {
-			return self::clear_cache_by( 'rest_domain', 'https://api.github.com' );
-		}
-
-		return false;
+	public static function clear_ghu_cache() {
+		return self::clear_cache_by( 'rest_domain', 'https://api.github.com' );
 	}
 
 }

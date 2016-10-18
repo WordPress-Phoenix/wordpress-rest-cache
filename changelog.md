@@ -1,3 +1,6 @@
+#### 1.0.2
+* More GHU Transient Changes
+
 #### 1.0.1
 * Hotfix GHU cache clear sync
 
