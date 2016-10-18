@@ -1,3 +1,6 @@
+#### 1.0.2
+* More GHU Transient Changes
+
 #### 1.0.0
 * Tested in production at scale for several days, ready to call plugin released and out of beta
 * Fixed github updater double caching issues and removed transients from GHU to reduce transient cache overhead, especially useful for reducing VARNISH / REDIS bandwidth issues.
