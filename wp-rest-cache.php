@@ -61,7 +61,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			$this->load_classes();
 
 			// initialize plugin during init
-			add_action( 'init', array( $this, 'init' ) );
+			add_action( 'init', array( $this, 'init' ), 5 );
 
 			// init for use with logged in users, see this::authenticated_init for more details
 			add_action( 'init', array( $this, 'authenticated_init' ) );
