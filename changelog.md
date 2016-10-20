@@ -1,3 +1,8 @@
+#### 1.0.5
+* Hotfix more GHU adjustments
+* Organized filters into filter class
+* run rest_cache->init() on actual wp init hook
+
 #### 1.0.4
 * Version bump fixes
 

@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/WordPress-Phoenix/wordpress-rest-cache
  * Description: A solution to caching REST data calls without relying on transients or wp_options tables. Note: for multisite "Network Activate", table may need manually created before activation.
  * Author: scarstens
- * Version: 1.0.4
+ * Version: 1.0.5
  * Author URI: http://github.com/scarstens
  * License: GPL V2
  * Text Domain: rest_cache
@@ -60,17 +60,11 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			// Loads the /inc/ autoloader
 			$this->load_classes();
 
-			// initialize not by adding an action but by running init function that adds its own actions/filters
-			// nesting actions/filters within the init action was causing the transport filter to run too late in some cases
-			$this->init();
-
-			add_action( 'before_ghu_delete_all_transients', array( 'WRC_Utility', 'clear_ghu_cache') );
+			// initialize plugin during init
+			add_action( 'init', array( $this, 'init' ) );
 
 			// init for use with logged in users, see this::authenticated_init for more details
 			add_action( 'init', array( $this, 'authenticated_init' ) );
-
-			// uncomment the following to setup custom widget registration
-			//add_action( 'widgets_init', array( $this, 'register_custom_widget' ) );
 
 			// hook can be used by mu plugins to modify plugin behavior after plugin is setup
 			do_action( get_called_class() . '_setup', $this );
