@@ -1,3 +1,7 @@
+#### 1.1.1
+* Hotpatch late cache init
+* Patch cron to run 5 minutes instead of 15 seconds
+
 #### 1.1.0
 * New cache clearing features on admin page
 * Rebuilt great deal of infrastructure for easier extending

@@ -34,8 +34,7 @@ class WRC_Cron {
 	public static function add_schedule_interval( $schedules ) {
 
 		$schedules['5_minutes'] = array(
-			'interval' => 15, // 5 minutes in seconds TODO: dont run every 30s in prod!
-//			'interval' => 300, // 5 minutes in seconds
+			'interval' => 300, // 5 minutes in seconds
 			'display'  => 'Once every 5 minutes'
 		);
 
