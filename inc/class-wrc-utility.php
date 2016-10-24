@@ -28,7 +28,7 @@ class WRC_Utility {
 	 * @return int number of deleted cache rows
 	 */
 	public static function clear_ghu_cache() {
-		return self::clear_cache_by( 'rest_domain', 'https://api.github.com' );
+		return self::clear_cache_by( 'rest_tag', 'github-updater' );
 	}
 
 }
