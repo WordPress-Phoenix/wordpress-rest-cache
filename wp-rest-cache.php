@@ -3,8 +3,8 @@
  * Plugin Name: WP REST Cache
  * Plugin URI: https://github.com/WordPress-Phoenix/wordpress-rest-cache
  * Description: A solution to caching REST data calls without relying on transients or wp_options tables. Note: for multisite "Network Activate", table may need manually created before activation.
- * Author: scarstens
- * Version: 1.0.5
+ * Author: scarstens, mlteal
+ * Version: 1.1.0
  * Author URI: http://github.com/scarstens
  * License: GPL V2
  * Text Domain: rest_cache
@@ -61,7 +61,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			$this->load_classes();
 
 			// initialize plugin during init
-			add_action( 'init', array( $this, 'init' ) );
+			add_action( 'init', array( $this, 'init' ), 5 );
 
 			// init for use with logged in users, see this::authenticated_init for more details
 			add_action( 'init', array( $this, 'authenticated_init' ) );
@@ -90,10 +90,11 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 				}
 			}
 
-
 			if ( class_exists( 'WRC_Filters' ) ) {
 				WRC_Filters::init();
 			}
+			
+			add_action('wp_ajax_wrc-ajax-run', array('WRC_Ajax', 'run'));
 
 			do_action( get_called_class() . '_after_init' );
 		}
