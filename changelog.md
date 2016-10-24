@@ -1,3 +1,9 @@
+#### 1.1.0
+* New cache clearing features on admin page
+* Rebuilt great deal of infrastructure for easier extending
+* Corrected init priority for GHU
+* Extended utility class with "contains" query model
+
 #### 1.0.5
 * Hotfix more GHU adjustments
 * Organized filters into filter class
