@@ -18,6 +18,24 @@
 ## Advanced Options
 * There are no UIX options related to this plugin, its just plug-and-play
 
+## Controlling cache with wp_remote_get args
+
+### Setting custom cache times / expirations
+```
+wp_remote_get( $url, array( 
+    'wp-rest-cache' => array( 
+        'expires' => 12 * HOUR_IN_SECONDS,
+        'tag'        => 'mytag'
+    )
+);
+```
+### Disable or Exclude cache 
+```
+wp_remote_get( $url, array( 
+    'wp-rest-cache' => 'exclude',
+);
+```
+
 # How it works details
 ## Summary
 Cache all WordPress REST requests made via `wp_remote_get()` in a custom table. 
