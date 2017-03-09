@@ -7,8 +7,6 @@
  * as of WordPress 4.6 it now uses pre_http_request and http_requests
  * filter since the transports filter is no longer used.
  *
- * TODO: consider "paginating" the cached updating via cron. Currently one cron executes to loop over the rows that
- * need new calls/updates
  */
 class WRC_Caching {
 	/**
@@ -24,8 +22,6 @@ class WRC_Caching {
 		}
 	}
 
-
-
 	/**
 	 * Save or update cached data in our custom table based on the md5'd URL
 	 * *** Note, there can only be 3 arguments to this function because it's
@@ -40,10 +36,14 @@ class WRC_Caching {
 	 * @return mixed
 	 */
 	static function store_data( $response, $args, $url ) {
+		$status_code = wp_remote_retrieve_response_code( $response );
 
 		// don't try to store if we don't have a 200 response
 		if (
-			200 != wp_remote_retrieve_response_code( $response )
+			(
+				true == apply_filters( 'wrc_only_cache_200', false )
+				&& 200 != $status_code
+			)
 			// only check is_cacheable_call if we're not running force update.
 			// Force update is usually set during cron, at which point we already know it's a cacheable call
 			|| false === static::is_cacheable_call( $args, $url )
@@ -55,6 +55,8 @@ class WRC_Caching {
 		if ( empty( $args['wp-rest-cache']['expires'] ) ) {
 			$args['wp-rest-cache']['expires'] = WP_Rest_Cache::$default_expires;
 		}
+
+		$expiration_date = self::get_expiration_date( $args['wp-rest-cache']['expires'] );
 
 		global $wpdb;
 
@@ -82,13 +84,14 @@ class WRC_Caching {
 			'rest_domain'         => $domain,
 			'rest_path'           => $path,
 			'rest_response'       => maybe_serialize( $response ),
-			'rest_expires'        => date( 'Y-m-d H:i:s', time() + $args['wp-rest-cache']['expires'] ),
-			'rest_last_requested' => date( 'Y-m-d', time() ),
+			'rest_expires'        => $expiration_date,
 			// current UTC time
+			'rest_last_requested' => date( 'Y-m-d', time() ),
 			'rest_tag'            => $tag,
 			'rest_to_update'      => $update,
+			// Always set args to an empty string - they're only stored on "check expired" so the cron has info it needs.
 			'rest_args'           => '',
-			// always set args to an empty as we store them on "check expired" so the cron has info it needs
+			'status_code'         => $status_code,
 		);
 
 		// either update or insert
@@ -136,6 +139,35 @@ class WRC_Caching {
 	}
 
 	/**
+	 * Correctly returns a date based on the defaults set up and/or
+	 * the response status code.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string|array $expires_values
+	 * @param string|int   $status_code
+	 *
+	 * @return false|string
+	 */
+	static function get_expiration_date( $expires_values, $status_code ) {
+		if ( ! is_array( $expires_values ) ) {
+			$default_expires_values = WP_Rest_Cache::$default_expires;
+			$default_expires_values['default'] = $expires_values;
+			$time = $default_expires_values;
+		} else {
+			if ( ! empty( $expires_values[ $status_code ] ) ) {
+				$time = $expires_values[ $status_code ];
+			} elseif ( ! empty( $expires_values['default'] ) ) {
+				$time = $expires_values['default'];
+			} else {
+				$time = WP_Rest_Cache::$default_expires['default'];
+			}
+		}
+
+		return date( 'Y-m-d H:i:s', time() + $time );
+	}
+
+	/**
 	 * Utilize the pre_http_request filter as the filter used
 	 * previously (http_api_transports) is useless as of WP version 4.6
 	 *
@@ -155,6 +187,7 @@ class WRC_Caching {
 		 */
 		if ( ! static::is_cacheable_call( $args, $url ) ) {
 			remove_filter( 'http_response', array( get_called_class(), 'store_data' ), 1 );
+
 			return false;
 		}
 
