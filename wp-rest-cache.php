@@ -37,6 +37,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 	class WP_Rest_Cache {
 		public $installed_dir;
 		static $table = 'rest_cache'; // the prefix is appended once we have access to the $wpdb global
+		static $table_version_key = 'wrc_table_version';
 		static $columns = 'rest_md5,rest_domain,rest_path,rest_response,rest_expires,rest_last_requested,rest_tag,rest_to_update';
 		static $default_expires = array(
 			// Default status codes  to 10 minutes, this is always in seconds.
@@ -92,6 +93,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		public function init() {
 
 			do_action( get_called_class() . '_before_init' );
+			self::maybe_upgrade_table();
 
 			if ( class_exists( 'WRC_Cron' ) ) {
 				WRC_Cron::init();
@@ -185,6 +187,11 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			global $wpdb;
 			define( 'REST_CACHE_DB_PREFIX', $wpdb->base_prefix );
 			define( 'REST_CACHE_TABLE', REST_CACHE_DB_PREFIX . static::$table );
+
+			// Register the REST Cache table with the wpdb object.
+			if ( ! isset( $wpdb->rest_cache ) ) {
+				$wpdb->rest_cache = REST_CACHE_TABLE;
+			}
 		}
 
 		protected function configure_defaults() {
@@ -201,6 +208,19 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			return (bool) ( stristr( WP_NETWORKURL, '.dev' ) || stristr( WP_NETWORKURL, '.wpengine' ) || stristr( WP_NETWORKURL, 'dev.' ) || stristr( WP_NETWORKURL, '.staging' ) );
 		}
 
+		protected static function maybe_upgrade_table() {
+			$table_version = get_site_option( self::$table_version_key );
+			// Table version is incremented by 1 on each table update.
+			if ( ! $table_version || 2 > (int) $table_version ) {
+				// Version 2 adds a `status_code` column to the table.
+				global $wpdb;
+				$query = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `status_code` VARCHAR(3) NOT NULL DEFAULT '200' AFTER `rest_args`;" );
+
+				if ( $query ) {
+					update_site_option( self::$table_version_key, '2' );
+				}
+			}
+		}
 	} // END class
 } // END if(!class_exists())
 
