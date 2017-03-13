@@ -139,7 +139,7 @@ class WRC_Cron {
 			$args['wp-rest-cache']['expires'] = WP_Rest_Cache::$default_expires;
 		}
 
-		$expiration_date = WP_Rest_Cache::get_expiration_date( $args['wp-rest-cache']['expires'] );
+		$expiration_date = WP_Rest_Cache::get_expiration_date( $args['wp-rest-cache']['expires'], $status_code );
 
 		global $wpdb;
 
@@ -167,7 +167,7 @@ class WRC_Cron {
 			'rest_domain'         => $domain,
 			'rest_path'           => $path,
 			'rest_response'       => maybe_serialize( $response ),
-			'rest_expires'        => date( 'Y-m-d H:i:s', time() + (int) $args['wp-rest-cache']['expires'] ),
+			'rest_expires'        => $expiration_date,
 			'rest_last_requested' => date( 'Y-m-d', time() ),
 			// current UTC time
 			'rest_tag'            => $tag,

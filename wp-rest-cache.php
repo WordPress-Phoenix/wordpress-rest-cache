@@ -225,7 +225,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 				}
 			}
 
-			return date( 'Y-m-d H:i:s', time() + $time );
+			return date( 'Y-m-d H:i:s', time() + (int) $time );
 		}
 
 		/**

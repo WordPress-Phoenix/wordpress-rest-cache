@@ -56,7 +56,7 @@ class WRC_Caching {
 			$args['wp-rest-cache']['expires'] = WP_Rest_Cache::$default_expires;
 		}
 
-		$expiration_date = WP_Rest_Cache::get_expiration_date( $args['wp-rest-cache']['expires'] );
+		$expiration_date = WP_Rest_Cache::get_expiration_date( $args['wp-rest-cache']['expires'], $status_code );
 
 		global $wpdb;
 
