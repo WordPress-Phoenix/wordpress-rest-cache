@@ -119,8 +119,9 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		 */
 		public function authenticated_init() {
 			if ( is_user_logged_in() ) {
-				require_once( $this->installed_dir . '/admin/class-wrc-admin.php' );
-				WRC_Admin::init();
+				require_once( 'admin/class-wrc-admin.php' );
+				require_once( 'admin/class-wrc-admin-utility.php' );
+				WRC_Admin::init( $this );
 			}
 		}
 
@@ -265,6 +266,6 @@ if ( class_exists( 'WP_Rest_Cache' ) ) {
 	register_deactivation_hook( __FILE__, array( 'WP_Rest_Cache', 'deactivate' ) );
 
 	// instantiate the plugin class, which should never be instantiated more then once
-	global $WP_Rest_Cache;
-	$WP_Rest_Cache = new WP_Rest_Cache();
+	global $wp_rest_cache;
+	$wp_rest_cache = new WP_Rest_Cache();
 }

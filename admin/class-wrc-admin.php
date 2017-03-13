@@ -19,7 +19,7 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 		 * Admin init prepares admin settings page
 		 *
 		 * @since 0.8.0
-		 */
+		*/
 		public static function init() {
 			/**
 			 * Check to make sure we're in the admin, since this init is
@@ -30,17 +30,16 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 			} elseif ( is_admin() ) {
 				add_action( 'admin_menu', array( get_called_class(), 'add_menu_page' ) );
 			}
-			
+
 			/**
 			 * Used for auto complete text fields
-             */
+			 */
 			add_action( 'current_screen', function() {
 			    $current_screen = get_current_screen();
-			    if( stristr( $current_screen->id, static::$admin_page_slug ) ) {
+			    if ( stristr( $current_screen->id, static::$admin_page_slug ) ) {
 			        wp_enqueue_script( 'suggest' );
 			    }
 			} );
-			
 		}
 
 		/**
@@ -68,7 +67,7 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 		 * Handles processing admin form submissions on admin settings pages
 		 *
 		 */
-		static function process_request(){
+		static function process_request() {
 
 			if ( ! empty( $_REQUEST['wrc-entry-delete'] ) ) {
 				$deleted = WRC_DB::clear_cache_by( 'rest_md5', $_REQUEST['wrc-entry-delete'] );
@@ -84,13 +83,13 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 			}
 
 			// Validate action submitted
-			if( empty( $_REQUEST['wrc-action'] ) ) {
+			if ( empty( $_REQUEST['wrc-action'] ) ) {
 				return '';
 			}
 
 			// If action submitted validate nonce
-			if( ! wp_verify_nonce( $_REQUEST[static::$utilities_id], $_REQUEST['wrc-action'] ) ) {
-				return WRC_Admin_Utility::get_action_message('error', 'Error: failed nonce validation.');
+			if ( ! wp_verify_nonce( $_REQUEST[ static::$utilities_id ], $_REQUEST['wrc-action'] ) ) {
+				return WRC_Admin_Utility::get_action_message( 'error', 'Error: failed nonce validation.' );
 			}
 
 			// Assess action since validation passed
@@ -100,15 +99,15 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 				case 'clear-cache-by-tag':
 					$seek_by = $_REQUEST['wrc-tag'];
 					$results = WRC_DB::clear_cache_containing( 'rest_tag', $_REQUEST['wrc-tag'] );
-					if( $results ) {
+					if ( $results ) {
 						$extra = '';
-						if( intval($results) > 999 ) {
+						if ( intval( $results ) > 999 ) {
 							$extra = ' This cache clear was limited to 1000 rows. Please continue running until this 
 							message goes away in order to completely purge this cache.';
 						}
 						return WRC_Admin_Utility::get_action_message( 'updated', "$results cache items cleared for tag <i>$seek_by</i>.$extra" );
 					} else {
-						$extra = '<span style="display: none;">Data: ' . var_export($results, true) .' ~ '. $wpdb->last_query . '</span>';
+						$extra = '<span style="display: none;">Data: ' . var_export( $results, true ) . ' ~ ' . $wpdb->last_query . '</span>';
 						return WRC_Admin_Utility::get_action_message( 'error', "<i>$action</i> returned no results or was empty on <i>$seek_by</i>.$extra" );
 					}
 					break;
@@ -122,7 +121,7 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 		 *
 		 */
 		static function options_page() {
-			if ( ! empty( $_POST) ) {
+			if ( ! empty( $_POST ) ) {
 				echo static::process_request();
 			}
 			?>
@@ -135,15 +134,15 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 			</div>
 			<?php
 		}
-		
+
 		/**
 		 * Print HTML for the clear by tag form
 		 *
 		 */
-		static function build_cache_clear_form(){
+		static function build_cache_clear_form() {
 			$action = 'clear-cache-by-tag';
 			$rest_tag = '';
-			if( ! empty( $_REQUEST['wrc-tag'] ) ) {
+			if ( ! empty( $_REQUEST['wrc-tag'] ) ) {
 				$rest_tag = $_REQUEST['wrc-tag'];
 			}
 			?>
@@ -155,8 +154,8 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 			<br /><input type="text" name="wrc-tag" id="wrc-tag" value="<?php echo $rest_tag; ?>" />
 			<p class="description">Delete is limited to delete only 1000 rows at a time, you must keep running the
 			utility until less then 0 rows are deleted to ensure all cache for that tag is cleared.</p>
-			<br /><input type="button" id="wrc-submit" value="Run" class="button-primary" onclick="jQuery(this).next().show();">
-			<input type="submit" id="wrc-submit-confirm" value="Confirm Action" class="button-primary" style="display: none;">
+			<br /><input type="button" id="wrc-submit" value="Run" class="button-primary" onclick="jQuery(this).next().show();" />
+			<input type="submit" id="wrc-submit-confirm" value="Confirm Action" class="button-primary" style="display: none;"/>
 			<script>
 			jQuery(function($) {
 				jQuery('#wrc-tag').suggest(ajaxurl+"?action=wrc-ajax-run&route=rest_tags", {delay: 500, minchars: 1, multiple:false, multipleSep: ","});
@@ -177,17 +176,18 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 		 * Print HTML for the recent cache query
 		 *
 		 */
-		static function build_query_one_form(){
+		static function build_query_one_form() {
 			$num_rows = 50;
 			$days_ago = 30;
-			if( ! empty( $_REQUEST['wrc-unused-num'] ) ) {
+			if ( ! empty( $_REQUEST['wrc-unused-num'] ) ) {
 				$num_rows = $_REQUEST['wrc-unused-num'];
 			}
-			if( ! empty( $_REQUEST['wrc-days-ago'] ) ) {
+			if ( ! empty( $_REQUEST['wrc-days-ago'] ) ) {
 				$days_ago = $_REQUEST['wrc-days-ago'];
 			}
 			?>
-			<form id="wrc-util-unused" method="POST" action="" class="card" style="max-width: 100%;">
+			<div class="card" style="max-width: 100%;">
+			<form id="wrc-util-unused" method="POST" action="">
 					<p><strong>Check a subset of results based on last request date:</strong></p>
 					<?php wp_nonce_field( static::$utilities_id, 'wrc-util-unused' ); ?>
 				<label for="wrc-unused-num">Max # of rows to return: </label>
@@ -201,6 +201,7 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 				<p class="description">Limit is querying the DB, it is recommended to keep the max rows number as
 					small as possible.</p>
 				<input type="submit" id="wrc-unused-submit" value="Run" class="button-primary">
+				</form>
 				<br>
 				<div class="results">
 					<?php
@@ -217,14 +218,14 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 								$csv .= $old_item['count'] . ',';
 								$csv .= $old_item['rest_domain'] . PHP_EOL;
 							}
-							echo WRC_Admin_Utility::csvToTable($csv);
+							echo WRC_Admin_Utility::csv_to_table( $csv );
 						} else {
 							echo '<p>There are no items with a last request date of more than ' . (int) $_REQUEST['wrc-days-ago'] . ' day(s) ago</p>';
 						}
 					}
 					?>
 				</div>
-				</form>
+				</div>
 				<?php
 		}
 
@@ -232,21 +233,22 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 		 * Print HTML for the find and delete form
 		 *
 		 */
-		static function build_query_two_form(){
+		static function build_query_two_form() {
 			$num_rows = 10;
 			$search_domain = 'https://api.github.com';
 			$search_path = '/wordpress-phoenix/';
-			if( ! empty( $_REQUEST['wrc-limit-num'] ) ) {
+			if ( ! empty( $_REQUEST['wrc-limit-num'] ) ) {
 				$num_rows = $_REQUEST['wrc-limit-num'];
 			}
-			if( ! empty( $_REQUEST['wrc-search-rest-domain'] ) ) {
-				$search_domain = $_REQUEST['wrc-search-rest-domain'];
+			if ( ! empty( $_REQUEST['wrc-search-rest-domain'] ) ) {
+				$search_domain = esc_url( $_REQUEST['wrc-search-rest-domain'] );
 			}
-			if( ! empty( $_REQUEST['wrc-search-rest-path'] ) ) {
-				$search_path = $_REQUEST['wrc-search-rest-path'];
+			if ( ! empty( $_REQUEST['wrc-search-rest-path'] ) ) {
+				$search_path = esc_attr( $_REQUEST['wrc-search-rest-path'] );
 			}
 			?>
-					<form id="wrc-util-search" method="POST" action="" class="card" style="max-width: 100%;">
+			<div class="card" style="max-width: 100%;">
+					<form id="wrc-util-search" method="POST" action="">
 					<p><strong>Search for a specific request:</strong></p>
 					<?php wp_nonce_field( static::$utilities_id, 'wrc-util-search' ); ?>
 					<label for="wrc-limit-num">Max # of rows to return: </label>
@@ -267,6 +269,7 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 					<p><em>Both the Domain and Path fields are searched on an EQUALS basis to help deal with DB search
 							performance.</em></p>
 					<input type="submit" id="wrc-util-search-submit" value="Run" class="button-primary">
+					</form>
 					<br />
 					<div class="results">
 						<?php
@@ -276,15 +279,10 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 							&& ! empty( $_REQUEST['wrc-limit-num'] )
 							&& ( ! empty( $_REQUEST['wrc-search-rest-domain'] ) || ! empty( $_REQUEST['wrc-search-rest-path'] ) )
 						) {
-							$searched_domain = ! empty( $_REQUEST['wrc-search-rest-domain'] ) ? $_REQUEST['wrc-search-rest-domain'] : '';
-							$searched_path   = ! empty( $_REQUEST['wrc-search-rest-path'] ) ? $_REQUEST['wrc-search-rest-path'] : '';
+							$searched_domain = ! empty( $_REQUEST['wrc-search-rest-domain'] ) ? $search_domain : '';
+							$searched_path   = ! empty( $_REQUEST['wrc-search-rest-path'] ) ? $search_path : '';
 							$returned_items  = WRC_DB::query_rest_table( $_REQUEST['wrc-limit-num'], $searched_domain, $searched_path );
 
-							if ( is_multisite() ) {
-								$admin_url = network_admin_url( 'settings.php?page=' . self::$admin_page_slug );
-							} else {
-								$admin_url = admin_url( 'tools.php?page=' . self::$admin_page_slug );
-							}
 							echo '<hr>';
 							$csv = '"REST Call Domain","REST Call Path","md5","action"' . PHP_EOL;
 
@@ -295,16 +293,14 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 									$csv .= $item['rest_md5'] . ',';
 									$csv .= '{{action_delete__' . $item['rest_md5'] . '}}' . PHP_EOL;
 								}
-								echo WRC_Admin_Utility::csvToTable($csv);
+								echo WRC_Admin_Utility::csv_to_table( $csv );
 							} else {
 								echo 'There are no items that match your search for <em>' . $searched_domain . $searched_path . '</em>';
 							}
 						}
 						?>
-
 					</div>
-				</form>
-				<br />
+				</div>
 			<?php
 		}
 
