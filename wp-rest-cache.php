@@ -200,6 +200,35 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		}
 
 		/**
+		 * Correctly returns a date based on the defaults set up and/or
+		 * the response status code.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param string|array $expires_values
+		 * @param string|int   $status_code
+		 *
+		 * @return false|string
+		 */
+		static function get_expiration_date( $expires_values, $status_code ) {
+			if ( ! is_array( $expires_values ) ) {
+				$default_expires_values = WP_Rest_Cache::$default_expires;
+				$default_expires_values['default'] = $expires_values;
+				$time = $default_expires_values;
+			} else {
+				if ( ! empty( $expires_values[ $status_code ] ) ) {
+					$time = $expires_values[ $status_code ];
+				} elseif ( ! empty( $expires_values['default'] ) ) {
+					$time = $expires_values['default'];
+				} else {
+					$time = WP_Rest_Cache::$default_expires['default'];
+				}
+			}
+
+			return date( 'Y-m-d H:i:s', time() + $time );
+		}
+
+		/**
 		 * This function is used to make it quick and easy to programatically do things only on your development
 		 * domains. Typical usage would be to change debugging options or configure sandbox connections to APIs.
 		 */
@@ -208,6 +237,9 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			return (bool) ( stristr( WP_NETWORKURL, '.dev' ) || stristr( WP_NETWORKURL, '.wpengine' ) || stristr( WP_NETWORKURL, 'dev.' ) || stristr( WP_NETWORKURL, '.staging' ) );
 		}
 
+		/**
+		 * @since 1.2.0
+		 */
 		protected static function maybe_upgrade_table() {
 			$table_version = get_site_option( self::$table_version_key );
 			// Table version is incremented by 1 on each table update.
