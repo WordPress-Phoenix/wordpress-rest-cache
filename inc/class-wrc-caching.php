@@ -78,9 +78,11 @@ class WRC_Caching {
 
 		$tag    = ! empty( $args['wp-rest-cache']['tag'] ) ? $args['wp-rest-cache']['tag'] : '';
 		$update = ! empty( $args['wp-rest-cache']['update'] ) ? $args['wp-rest-cache']['update'] : 0;
+		$md5 = md5( $url );
 
 		$data = array(
-			'rest_md5'            => md5( $url ),
+			'rest_md5'            => $md5,
+			'key'                 => $md5 . '+' . substr( sanitize_key( $tag ), 0, 32 ),
 			'rest_domain'         => $domain,
 			'rest_path'           => $path,
 			'rest_response'       => maybe_serialize( $response ),

@@ -247,10 +247,13 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			if ( ! $table_version || 2 > (int) $table_version ) {
 				// Version 2 adds a `status_code` column to the table.
 				global $wpdb;
-				$query = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `status_code` VARCHAR(3) NOT NULL DEFAULT '200' AFTER `rest_args`;" );
+				$query1 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `status_code` VARCHAR(3) NOT NULL DEFAULT '200' AFTER `rest_args`;" );
+				$query2 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `key` VARCHAR(65) NOT NULL AFTER `rest_md5`;" );
 
-				if ( $query ) {
+				if ( $query1 && $query2 ) {
 					update_site_option( self::$table_version_key, '2' );
+				} else {
+					new WP_Error( 'wrc_error', 'There was an error updating the WP REST Cache table.', array( $query1, $query2 ) );
 				}
 			}
 		}
