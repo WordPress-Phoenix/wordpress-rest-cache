@@ -90,6 +90,32 @@ class WRC_DB {
 	}
 
 	/**
+	 * Deletes REST Cache rows last requested moe than X days ago.
+	 *
+	 * @param int $days_ago
+	 * @param int $limit
+	 *
+	 * @return array|bool|null|object
+	 */
+	static function delete_old_requests( $days_ago = 30, $limit = 100 ) {
+		global $wpdb;
+
+		// Put a hard limit of 10k rows on this function.
+		if ( (int) $limit > 10000 ) {
+			$limit = 10000;
+		}
+
+		$days_ago = date( 'Y-m-d', strtotime( $days_ago . ' days ago' ) );
+
+		$sql = '
+			DELETE FROM   ' . REST_CACHE_TABLE . ' 
+			WHERE rest_last_requested < "' . $days_ago . '" 
+			LIMIT ' . (int) $limit;
+
+		return $wpdb->query( $sql );
+	}
+
+	/**
 	 * Return an array of rows from the rest table based on domain and path
 	 *
 	 * @param int $limit

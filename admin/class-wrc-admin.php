@@ -63,6 +63,27 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 			);
 		}
 
+
+		/**
+		 * Print settings page HTML
+		 *
+		 */
+		static function options_page() {
+			if ( ! empty( $_POST ) ) {
+				echo static::process_request();
+			}
+			?>
+			<div class="wrap">
+			<h1>WP REST Cache Utilities</h1>
+			<div id="<?php echo static::$utilities_id; ?>">
+				<?php static::build_trash_collection_form(); ?>
+				<?php static::build_query_one_form(); ?>
+				<?php static::build_query_two_form(); ?>
+				<?php static::build_cache_clear_form(); ?>
+			</div>
+			<?php
+		}
+
 		/**
 		 * Handles processing admin form submissions on admin settings pages
 		 *
@@ -114,25 +135,6 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 				default:
 					break;
 			}
-		}
-
-		/**
-		 * Print settings page HTML
-		 *
-		 */
-		static function options_page() {
-			if ( ! empty( $_POST ) ) {
-				echo static::process_request();
-			}
-			?>
-			<div class="wrap">
-			<h1>WP REST Cache Utilities</h1>
-			<div id="<?php echo static::$utilities_id; ?>">
-				<?php static::build_query_one_form(); ?>
-				<?php static::build_query_two_form(); ?>
-				<?php static::build_cache_clear_form(); ?>
-			</div>
-			<?php
 		}
 
 		/**
@@ -304,5 +306,41 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 			<?php
 		}
 
+		static function build_trash_collection_form() {
+			$days_ago = 30;
+			if ( ! empty( $_REQUEST['wrc-util-older-than'] ) ) {
+				$days_ago = (int) $_REQUEST['wrc-util-older-than'];
+			}
+			?>
+			<div class="card" style="max-width: 100%;">
+			<form id="wrc-util-trash-collection" method="POST" action="">
+					<?php wp_nonce_field( static::$utilities_id, 'wrc-util-trash-collection' ); ?>
+				<br><label for="wrc-util-older-than">Delete rows with a "Last Called" date older than # of days: </label>
+				<br><input type="number" value="<?php echo $days_ago; ?>"
+				           name="wrc-util-older-than"
+				           id="wrc-util-older-than"/>
+				<input type="submit" id="wrc-trash-collection-submit" value="Run" class="button-primary">
+				</form>
+				<br>
+				<div class="results">
+					<?php
+					if (
+						! empty( $_REQUEST['wrc-util-older-than'] )
+						&& 1 < (int) $_REQUEST['wrc-util-older-than']
+						&& wp_verify_nonce( $_REQUEST['wrc-util-trash-collection'], static::$utilities_id )
+					) {
+						$old_items = WRC_DB::delete_old_requests( (int) $_REQUEST['wrc-util-older-than'] );
+						echo '<hr>';
+						if ( ! empty( $old_items ) ) {
+							echo '<p>Deleted ' . $old_items . ' entries from WP REST Cache table. Up to 100 rows can be deleted at a time.';
+						} else {
+							echo '<p>There are no items with a last request date of more than ' . (int) $days_ago . ' day(s) ago</p>';
+						}
+					}
+					?>
+				</div>
+				</div>
+				<?php
+		}
 	} // END class
 } // END if(!class_exists())
