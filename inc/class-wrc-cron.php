@@ -35,7 +35,7 @@ class WRC_Cron {
 
 		$schedules['5_minutes'] = array(
 			'interval' => 300, // 5 minutes in seconds
-			'display'  => 'Once every 5 minutes'
+			'display'  => 'Once every 5 minutes',
 		);
 
 		return $schedules;
@@ -161,7 +161,7 @@ class WRC_Cron {
 
 		$tag    = ! empty( $args['wp-rest-cache']['tag'] ) ? $args['wp-rest-cache']['tag'] : '';
 		$update = ! empty( $args['wp-rest-cache']['update'] ) ? $args['wp-rest-cache']['update'] : 0;
-		$md5 = md5( $url );
+		$md5    = md5( $url );
 
 		$data = array(
 			'rest_md5'            => $md5,

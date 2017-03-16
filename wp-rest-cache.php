@@ -121,7 +121,7 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			if ( is_user_logged_in() ) {
 				require_once( 'admin/class-wrc-admin.php' );
 				require_once( 'admin/class-wrc-admin-utility.php' );
-				WRC_Admin::init( $this );
+				WRC_Admin::init();
 			}
 		}
 
@@ -213,9 +213,9 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		 */
 		static function get_expiration_date( $expires_values, $status_code ) {
 			if ( ! is_array( $expires_values ) ) {
-				$default_expires_values = WP_Rest_Cache::$default_expires;
+				$default_expires_values            = WP_Rest_Cache::$default_expires;
 				$default_expires_values['default'] = $expires_values;
-				$time = $default_expires_values;
+				$time                              = $default_expires_values;
 			} else {
 				if ( ! empty( $expires_values[ $status_code ] ) ) {
 					$time = $expires_values[ $status_code ];
@@ -253,7 +253,10 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 				if ( $query1 && $query2 ) {
 					update_site_option( self::$table_version_key, '2' );
 				} else {
-					new WP_Error( 'wrc_error', 'There was an error updating the WP REST Cache table.', array( $query1, $query2 ) );
+					new WP_Error( 'wrc_error', 'There was an error updating the WP REST Cache table.', array(
+						$query1,
+						$query2,
+					) );
 				}
 			}
 		}

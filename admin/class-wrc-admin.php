@@ -100,7 +100,6 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 					$msg = 'Oops, looks like there was an issue deleting that entry.';
 					return WRC_Admin_Utility::get_action_message( 'update', $msg );
 				}
-				return $msg;
 			}
 
 			// Validate action submitted
@@ -135,6 +134,8 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 				default:
 					break;
 			}
+
+			return '';
 		}
 
 		/**
@@ -159,7 +160,7 @@ if ( ! class_exists( 'WRC_Admin' ) ) {
 			<br /><input type="button" id="wrc-submit" value="Run" class="button-primary" onclick="jQuery(this).next().show();" />
 			<input type="submit" id="wrc-submit-confirm" value="Confirm Action" class="button-primary" style="display: none;"/>
 			<script>
-			jQuery(function($) {
+			jQuery(function() {
 				jQuery('#wrc-tag').suggest(ajaxurl+"?action=wrc-ajax-run&route=rest_tags", {delay: 500, minchars: 1, multiple:false, multipleSep: ","});
 				jQuery('#wrc-cache-clear-form').on('keyup keypress', function(e) {
 				  var keyCode = e.keyCode || e.which;

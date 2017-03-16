@@ -7,7 +7,7 @@
  *
  */
 class WRC_Ajax {
-	
+
 	/**
 	 * WRC ajax action router
 	 */
@@ -17,10 +17,10 @@ class WRC_Ajax {
 				static::print_for_suggest( WRC_DB::get_rest_tags( $_REQUEST['q'] ) );
 				break;
 		}
-		
+
 		exit;
 	}
-	
+
 	/**
 	 * @param $data
 	 */
