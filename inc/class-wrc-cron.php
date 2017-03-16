@@ -127,11 +127,10 @@ class WRC_Cron {
 	 * @return mixed
 	 */
 	static function store_data( $response, $args, $url ) {
+		$status_code = wp_remote_retrieve_response_code( $response );
 
 		// don't try to store if we don't have a 200 response
-		if (
-			200 != wp_remote_retrieve_response_code( $response )
-		) {
+		if ( 200 != $status_code ) {
 			return $response;
 		}
 
@@ -139,6 +138,8 @@ class WRC_Cron {
 		if ( empty( $args['wp-rest-cache']['expires'] ) ) {
 			$args['wp-rest-cache']['expires'] = WP_Rest_Cache::$default_expires;
 		}
+
+		$expiration_date = WP_Rest_Cache::get_expiration_date( $args['wp-rest-cache']['expires'], $status_code );
 
 		global $wpdb;
 
@@ -160,19 +161,21 @@ class WRC_Cron {
 
 		$tag    = ! empty( $args['wp-rest-cache']['tag'] ) ? $args['wp-rest-cache']['tag'] : '';
 		$update = ! empty( $args['wp-rest-cache']['update'] ) ? $args['wp-rest-cache']['update'] : 0;
+		$md5 = md5( $url );
 
 		$data = array(
-			'rest_md5'            => md5( $url ),
+			'rest_md5'            => $md5,
+			'key'                 => $md5 . '+' . substr( sanitize_key( $tag ), 0, 32 ),
 			'rest_domain'         => $domain,
 			'rest_path'           => $path,
 			'rest_response'       => maybe_serialize( $response ),
-			'rest_expires'        => date( 'Y-m-d H:i:s', time() + $args['wp-rest-cache']['expires'] ),
+			'rest_expires'        => $expiration_date,
 			'rest_last_requested' => date( 'Y-m-d', time() ),
 			// current UTC time
 			'rest_tag'            => $tag,
 			'rest_to_update'      => $update,
 			'rest_args'           => '',
-			// always set args to an empty as we store them on "check expired" so the cron has info it needs
+			'status_code'         => $status_code,
 		);
 
 		// either update or insert

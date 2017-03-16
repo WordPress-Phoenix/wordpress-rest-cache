@@ -1,3 +1,10 @@
+#### 1.2.0
+* Allow non-200 responses to be stored in the REST Cache. 
+  New `status_code` column keeps track of response status
+* Set default cache lengths for different response codes
+* Add column for a new key -- this is only being inserted/updated at the moment, 
+  but will replace use of the MD5 for cached item lookups in the next version.
+
 #### 1.1.1
 * Hotpatch late cache init
 * Patch cron to run 5 minutes instead of 15 seconds

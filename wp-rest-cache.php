@@ -37,9 +37,18 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 	class WP_Rest_Cache {
 		public $installed_dir;
 		static $table = 'rest_cache'; // the prefix is appended once we have access to the $wpdb global
+		static $table_version_key = 'wrc_table_version';
 		static $columns = 'rest_md5,rest_domain,rest_path,rest_response,rest_expires,rest_last_requested,rest_tag,rest_to_update';
-		static $default_expires = 600; // defaults to 10 minutes, this is always in seconds
-		
+		static $default_expires = array(
+			// Default status codes  to 10 minutes, this is always in seconds.
+			'default' => 10 * MINUTE_IN_SECONDS,
+			'400'     => 5 * MINUTE_IN_SECONDS,
+			'401'     => 5 * MINUTE_IN_SECONDS,
+			'404'     => 5 * MINUTE_IN_SECONDS,
+			'410'     => 8 * WEEK_IN_SECONDS,
+			'500'     => 5 * MINUTE_IN_SECONDS,
+		);
+
 		/**
 		 * Construct the plugin object
 		 *
@@ -47,19 +56,19 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		 */
 		public function __construct() {
 			$this->installed_dir = plugin_dir_path( __FILE__ );
-			
+
 			// hook can be used by mu plugins to modify plugin behavior after plugin is setup
 			do_action( get_called_class() . '_preface', $this );
-			
+
 			// configure and setup the plugin class variables
 			$this->configure_defaults();
-			
+
 			// define globals used by the plugin including bloginfo
 			$this->defines_and_globals();
-			
+
 			// Loads the /inc/ autoloader
 			$this->load_classes();
-			
+
 			if ( ! defined( 'NO_WP_REST_CACHE' ) ) {
 				if ( class_exists( 'WRC_Caching' ) ) {
 					WRC_Caching::init();
@@ -69,12 +78,12 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			add_action( 'init', array( $this, 'init' ), 5 );
 			// init for use with logged in users, see this::authenticated_init for more details
 			add_action( 'init', array( $this, 'authenticated_init' ) );
-			
+
 			// hook can be used by mu plugins to modify plugin behavior after plugin is setup
 			do_action( get_called_class() . '_setup', $this );
-			
+
 		} // END public function __construct
-		
+
 		/**
 		 * Initialize the plugin - for public (front end)
 		 *
@@ -82,22 +91,23 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		 * @return  void
 		 */
 		public function init() {
-			
+
 			do_action( get_called_class() . '_before_init' );
-			
+			self::maybe_upgrade_table();
+
 			if ( class_exists( 'WRC_Cron' ) ) {
 				WRC_Cron::init();
 			}
-			
+
 			if ( class_exists( 'WRC_Filters' ) ) {
 				WRC_Filters::init();
 			}
-			
-			add_action('wp_ajax_wrc-ajax-run', array('WRC_Ajax', 'run'));
-			
+
+			add_action( 'wp_ajax_wrc-ajax-run', array( 'WRC_Ajax', 'run' ) );
+
 			do_action( get_called_class() . '_after_init' );
 		}
-		
+
 		/**
 		 * Initialize the plugin - for admin (back end)
 		 * You would expected this to be handled on action admin_init, but it does not properly handle
@@ -109,11 +119,12 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		 */
 		public function authenticated_init() {
 			if ( is_user_logged_in() ) {
-				require_once( $this->installed_dir . '/admin/class-wrc-admin.php' );
-				WRC_Admin::init();
+				require_once( 'admin/class-wrc-admin.php' );
+				require_once( 'admin/class-wrc-admin-utility.php' );
+				WRC_Admin::init( $this );
 			}
 		}
-		
+
 		/**
 		 * Activate the plugin
 		 *
@@ -121,10 +132,10 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		 * @return  void
 		 */
 		public static function activate() {
-			
+
 			// create our table if it doesn't already exist
-			
-			$sql = "CREATE TABLE " . REST_CACHE_TABLE . " (
+
+			$sql = 'CREATE TABLE ' . REST_CACHE_TABLE . " (
   `rest_last_requested` date NOT NULL,
   `rest_expires` datetime DEFAULT NULL,
   `rest_domain` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
@@ -141,12 +152,12 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
   KEY `rest_tag` (`rest_tag`(191)),
   KEY `rest_to_update` (`rest_to_update`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
-			
+
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 			dbDelta( $sql );
-			
+
 		} // END public static function activate
-		
+
 		/**
 		 * Deactivate the plugin
 		 *
@@ -154,14 +165,14 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		 * @return  void
 		 */
 		public static function deactivate() {
-			
+
 			/*
 			 * Do not delete site options on deactivate. Usually only things in here will be related to
 			 * cache clearing like updating permalinks since some may no longer exist
 			 */
-			
+
 		} // END public static function deactivate
-		
+
 		/**
 		 * Loads PHP files in the includes folder
 		 *
@@ -170,20 +181,54 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		 */
 		protected function load_classes() {
 			// this class self-instantiates from within the file
-			require_once( 'class-wrc-autoloader.php');
+			require_once( 'class-wrc-autoloader.php' );
 		}
-		
+
 		protected function defines_and_globals() {
 			global $wpdb;
 			define( 'REST_CACHE_DB_PREFIX', $wpdb->base_prefix );
 			define( 'REST_CACHE_TABLE', REST_CACHE_DB_PREFIX . static::$table );
+
+			// Register the REST Cache table with the wpdb object.
+			if ( ! isset( $wpdb->rest_cache ) ) {
+				$wpdb->rest_cache = REST_CACHE_TABLE;
+			}
 		}
-		
+
 		protected function configure_defaults() {
-			$this->installed_dir  = dirname( __FILE__ );
-			$this->installed_url  = plugins_url( '/', __FILE__ );
+			$this->installed_dir = dirname( __FILE__ );
+			$this->installed_url = plugins_url( '/', __FILE__ );
 		}
-		
+
+		/**
+		 * Correctly returns a date based on the defaults set up and/or
+		 * the response status code.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param string|array $expires_values
+		 * @param string|int   $status_code
+		 *
+		 * @return false|string
+		 */
+		static function get_expiration_date( $expires_values, $status_code ) {
+			if ( ! is_array( $expires_values ) ) {
+				$default_expires_values = WP_Rest_Cache::$default_expires;
+				$default_expires_values['default'] = $expires_values;
+				$time = $default_expires_values;
+			} else {
+				if ( ! empty( $expires_values[ $status_code ] ) ) {
+					$time = $expires_values[ $status_code ];
+				} elseif ( ! empty( $expires_values['default'] ) ) {
+					$time = $expires_values['default'];
+				} else {
+					$time = WP_Rest_Cache::$default_expires['default'];
+				}
+			}
+
+			return date( 'Y-m-d H:i:s', time() + (int) $time );
+		}
+
 		/**
 		 * This function is used to make it quick and easy to programatically do things only on your development
 		 * domains. Typical usage would be to change debugging options or configure sandbox connections to APIs.
@@ -192,7 +237,26 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			// catches dev.mydomain.com, mydomain.dev, wpengine staging domains and mydomain.staging
 			return (bool) ( stristr( WP_NETWORKURL, '.dev' ) || stristr( WP_NETWORKURL, '.wpengine' ) || stristr( WP_NETWORKURL, 'dev.' ) || stristr( WP_NETWORKURL, '.staging' ) );
 		}
-		
+
+		/**
+		 * @since 1.2.0
+		 */
+		protected static function maybe_upgrade_table() {
+			$table_version = get_site_option( self::$table_version_key );
+			// Table version is incremented by 1 on each table update.
+			if ( ! $table_version || 2 > (int) $table_version ) {
+				// Version 2 adds a `status_code` column to the table.
+				global $wpdb;
+				$query1 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `status_code` VARCHAR(3) NOT NULL DEFAULT '200' AFTER `rest_args`;" );
+				$query2 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `key` VARCHAR(65) NOT NULL AFTER `rest_md5`;" );
+
+				if ( $query1 && $query2 ) {
+					update_site_option( self::$table_version_key, '2' );
+				} else {
+					new WP_Error( 'wrc_error', 'There was an error updating the WP REST Cache table.', array( $query1, $query2 ) );
+				}
+			}
+		}
 	} // END class
 } // END if(!class_exists())
 
@@ -203,8 +267,8 @@ if ( class_exists( 'WP_Rest_Cache' ) ) {
 	// Installation and un-installation hooks
 	register_activation_hook( __FILE__, array( 'WP_Rest_Cache', 'activate' ) );
 	register_deactivation_hook( __FILE__, array( 'WP_Rest_Cache', 'deactivate' ) );
-	
+
 	// instantiate the plugin class, which should never be instantiated more then once
-	global $WP_Rest_Cache;
-	$WP_Rest_Cache = new WP_Rest_Cache();
+	global $wp_rest_cache;
+	$wp_rest_cache = new WP_Rest_Cache();
 }
