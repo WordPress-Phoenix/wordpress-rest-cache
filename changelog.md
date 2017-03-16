@@ -2,8 +2,10 @@
 * Allow non-200 responses to be stored in the REST Cache. 
   New `status_code` column keeps track of response status
 * Set default cache lengths for different response codes
-* Add column for a new key -- this is only being inserted/updated at the moment, 
+* New `key` column -- this is only being inserted/updated at the moment, not used, 
   but will replace use of the MD5 for cached item lookups in the next version.
+* Add admin utility for clearing cache values older than X days 
+  (limited to 100 cleared at a time).
 
 #### 1.1.1
 * Hotpatch late cache init
