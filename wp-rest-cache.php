@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/WordPress-Phoenix/wordpress-rest-cache
  * Description: A solution to caching REST data calls without relying on transients or wp_options tables. Note: for multisite "Network Activate", table may need manually created before activation.
  * Author: scarstens, mlteal
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author URI: http://github.com/scarstens
  * License: GPL V2
  * Text Domain: rest_cache
@@ -136,21 +136,25 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			// create our table if it doesn't already exist
 
 			$sql = 'CREATE TABLE ' . REST_CACHE_TABLE . " (
-  `rest_last_requested` date NOT NULL,
-  `rest_expires` datetime DEFAULT NULL,
-  `rest_domain` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `rest_path` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `rest_response` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `rest_tag` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `rest_to_update` tinyint(1) DEFAULT '0',
-  `rest_md5` char(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `rest_args` longtext COLLATE utf8mb4_unicode_ci,
+			`rest_md5` char(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+            `rest_key` varchar(65) COLLATE utf8_unicode_ci NOT NULL,
+            `rest_domain` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+            `rest_path` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+            `rest_response` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+            `rest_expires` datetime DEFAULT NULL,
+            `rest_last_requested` date NOT NULL,
+            `rest_tag` varchar(1055) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+            `rest_to_update` tinyint(1) DEFAULT '0',
+            `rest_args` longtext COLLATE utf8mb4_unicode_ci,
+            `rest_status_code` varchar(3) COLLATE utf8_unicode_ci NOT NULL DEFAULT '200',
   PRIMARY KEY (`rest_md5`),
   KEY `rest_domain` (`rest_domain`(191),`rest_path`(191)),
   KEY `rest_expires` (`rest_expires`),
   KEY `rest_last_requested` (`rest_last_requested`),
   KEY `rest_tag` (`rest_tag`(191)),
-  KEY `rest_to_update` (`rest_to_update`)
+  KEY `rest_to_update` (`rest_to_update`),
+  KEY `rest_status_code` (`rest_status_code`),
+  KEY `rest_key` (`rest_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
 
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
@@ -244,14 +248,30 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 		protected static function maybe_upgrade_table() {
 			$table_version = get_site_option( self::$table_version_key );
 			// Table version is incremented by 1 on each table update.
-			if ( ! $table_version || 2 > (int) $table_version ) {
-				// Version 2 adds a `status_code` column to the table.
+			if ( ! $table_version || 2 == (int) $table_version  ) {
+				// Version 2 adds a `rest_status_code` column to the table.
 				global $wpdb;
-				$query1 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `status_code` VARCHAR(3) NOT NULL DEFAULT '200' AFTER `rest_args`;" );
-				$query2 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `key` VARCHAR(65) NOT NULL AFTER `rest_md5`;" );
+				$query1 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `rest_status_code` VARCHAR(3) COLLATE utf8_unicode_ci NOT NULL DEFAULT '200' AFTER `rest_args`;" );
+				$query2 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `rest_key` VARCHAR(65) COLLATE utf8_unicode_ci NOT NULL AFTER `rest_md5`;" );
 
 				if ( $query1 && $query2 ) {
-					update_site_option( self::$table_version_key, '2' );
+					update_site_option( self::$table_version_key, '3' );
+				} else {
+					new WP_Error( 'wrc_error', 'There was an error updating the WP REST Cache table.', array(
+						$query1,
+						$query2,
+					) );
+				}
+			}
+
+			if ( 2 == (int) $table_version ) {
+				// Version 3 adds a `status_code` column to the table.
+				global $wpdb;
+				$query1 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` DROP COLUMN `status_code`;" );
+				$query2 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` DROP COLUMN `key`" );
+
+				if ( $query1 && $query2 ) {
+					update_site_option( self::$table_version_key, '3' );
 				} else {
 					new WP_Error( 'wrc_error', 'There was an error updating the WP REST Cache table.', array(
 						$query1,

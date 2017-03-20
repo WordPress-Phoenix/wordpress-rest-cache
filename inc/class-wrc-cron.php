@@ -88,7 +88,7 @@ class WRC_Cron {
 		$query   = 'SELECT * FROM ' . REST_CACHE_TABLE . ' WHERE rest_to_update = 1';
 		$results = $wpdb->get_results( $query, ARRAY_A );
 
-		if ( is_array( $results ) && ! empty ( $results ) ) {
+		if ( is_array( $results ) && ! empty( $results ) ) {
 			foreach ( $results as $row ) {
 				// run maybe_unserialize on rest_args and check to see if the update arg is set and set to false if it is
 				$args = maybe_unserialize( $row['rest_args'] );
@@ -130,7 +130,10 @@ class WRC_Cron {
 		$status_code = wp_remote_retrieve_response_code( $response );
 
 		// don't try to store if we don't have a 200 response
-		if ( 200 != $status_code ) {
+		if (
+			true == apply_filters( 'wrc_only_cache_200', false )
+			&& 200 != $status_code
+		) {
 			return $response;
 		}
 
@@ -165,7 +168,7 @@ class WRC_Cron {
 
 		$data = array(
 			'rest_md5'            => $md5,
-			'key'                 => $md5 . '+' . substr( sanitize_key( $tag ), 0, 32 ),
+			'rest_key'                 => $md5 . '+' . substr( sanitize_key( $tag ), 0, 32 ),
 			'rest_domain'         => $domain,
 			'rest_path'           => $path,
 			'rest_response'       => maybe_serialize( $response ),
@@ -175,7 +178,7 @@ class WRC_Cron {
 			'rest_tag'            => $tag,
 			'rest_to_update'      => $update,
 			'rest_args'           => '',
-			'status_code'         => $status_code,
+			'rest_status_code'         => $status_code,
 		);
 
 		// either update or insert

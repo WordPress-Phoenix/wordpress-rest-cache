@@ -82,7 +82,7 @@ class WRC_Caching {
 
 		$data = array(
 			'rest_md5'            => $md5,
-			'key'                 => $md5 . '+' . substr( sanitize_key( $tag ), 0, 32 ),
+			'rest_key'                 => $md5 . '+' . substr( sanitize_key( $tag ), 0, 32 ),
 			'rest_domain'         => $domain,
 			'rest_path'           => $path,
 			'rest_response'       => maybe_serialize( $response ),
@@ -93,7 +93,7 @@ class WRC_Caching {
 			'rest_to_update'      => $update,
 			// Always set args to an empty string - they're only stored on "check expired" so the cron has info it needs.
 			'rest_args'           => '',
-			'status_code'         => $status_code,
+			'rest_status_code'         => $status_code,
 		);
 
 		// either update or insert

@@ -1,3 +1,7 @@
+#### 1.3.0
+* Modify new column names to `rest_key` and `rest_status_code`, improve table rename/update
+* Add missing filter for new caching of error codes that aren't just 200
+
 #### 1.2.0
 * Allow non-200 responses to be stored in the REST Cache. 
   New `status_code` column keeps track of response status
