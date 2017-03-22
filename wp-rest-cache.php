@@ -280,6 +280,34 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 				}
 			}
 		}
+
+		/**
+		 * Helper function to return a properly formatted array
+		 * containing the domain and path of a URL.
+		 *
+		 * @param string $url
+		 *
+		 * @return array
+		 */
+		static function get_parsed_url( $url ) {
+			// if you're on PHP < 5.4.7 make sure you're not leaving the scheme out, as it'll screw up parse_url
+			$parsed_url = parse_url( $url );
+			$scheme     = isset( $parsed_url['scheme'] ) ? $parsed_url['scheme'] . '://' : '';
+			$host       = isset( $parsed_url['host'] ) ? $parsed_url['host'] : '';
+			$port       = isset( $parsed_url['port'] ) ? ':' . $parsed_url['port'] : '';
+			$user       = isset( $parsed_url['user'] ) ? $parsed_url['user'] : '';
+			$pass       = isset( $parsed_url['pass'] ) ? ':' . $parsed_url['pass'] : '';
+			$pass       = ( $user || $pass ) ? $pass . '@' : '';
+			$path       = isset( $parsed_url['path'] ) ? $parsed_url['path'] : '';
+			$query      = isset( $parsed_url['query'] ) ? '?' . $parsed_url['query'] : '';
+			$fragment   = isset( $parsed_url['fragment'] ) ? '#' . $parsed_url['fragment'] : '';
+
+			// a domain could potentially not have a scheme, in which case we need to skip appending the colon
+			$domain = $scheme . $user . $pass . $host . $port;
+			$path   = $path . $query . $fragment;
+
+			return array( 'domain' => $domain, 'path' => $path );
+		}
 	} // END class
 } // END if(!class_exists())
 
