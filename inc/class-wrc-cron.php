@@ -116,8 +116,6 @@ class WRC_Cron {
 	/**
 	 * Save or update cached data in our custom table based on the md5'd URL
 	 *
-	 * TODO: get rid of the redundancy between this version of store_data and the version in WRC_Caching class
-	 *
 	 * @since 0.1.0
 	 *
 	 * @param      $response
@@ -127,62 +125,7 @@ class WRC_Cron {
 	 * @return mixed
 	 */
 	static function store_data( $response, $args, $url ) {
-		$status_code = wp_remote_retrieve_response_code( $response );
-
-		// don't try to store if we don't have a 200 response
-		if (
-			true == apply_filters( 'wrc_only_cache_200', false )
-			&& 200 != $status_code
-		) {
-			return $response;
-		}
-
-		// if no cache expiration is set, we'll set the default expiration time
-		if ( empty( $args['wp-rest-cache']['expires'] ) ) {
-			$args['wp-rest-cache']['expires'] = WP_Rest_Cache::$default_expires;
-		}
-
-		$expiration_date = WP_Rest_Cache::get_expiration_date( $args['wp-rest-cache']['expires'], $status_code );
-
-		global $wpdb;
-
-		// if you're on PHP < 5.4.7 make sure you're not leaving the scheme out, as it'll screw up parse_url
-		$parsed_url = parse_url( $url );
-		$scheme     = isset( $parsed_url['scheme'] ) ? $parsed_url['scheme'] . '://' : '';
-		$host       = isset( $parsed_url['host'] ) ? $parsed_url['host'] : '';
-		$port       = isset( $parsed_url['port'] ) ? ':' . $parsed_url['port'] : '';
-		$user       = isset( $parsed_url['user'] ) ? $parsed_url['user'] : '';
-		$pass       = isset( $parsed_url['pass'] ) ? ':' . $parsed_url['pass'] : '';
-		$pass       = ( $user || $pass ) ? $pass . '@' : '';
-		$path       = isset( $parsed_url['path'] ) ? $parsed_url['path'] : '';
-		$query      = isset( $parsed_url['query'] ) ? '?' . $parsed_url['query'] : '';
-		$fragment   = isset( $parsed_url['fragment'] ) ? '#' . $parsed_url['fragment'] : '';
-
-		// a domain could potentially not have a scheme, in which case we need to skip appending the colon
-		$domain = $scheme . $user . $pass . $host . $port;
-		$path   = $path . $query . $fragment;
-
-		$tag    = ! empty( $args['wp-rest-cache']['tag'] ) ? $args['wp-rest-cache']['tag'] : '';
-		$update = ! empty( $args['wp-rest-cache']['update'] ) ? $args['wp-rest-cache']['update'] : 0;
-		$md5    = md5( $url );
-
-		$data = array(
-			'rest_md5'            => $md5,
-			'rest_key'                 => $md5 . '+' . substr( sanitize_key( $tag ), 0, 32 ),
-			'rest_domain'         => $domain,
-			'rest_path'           => $path,
-			'rest_response'       => maybe_serialize( $response ),
-			'rest_expires'        => $expiration_date,
-			'rest_last_requested' => date( 'Y-m-d', time() ),
-			// current UTC time
-			'rest_tag'            => $tag,
-			'rest_to_update'      => $update,
-			'rest_args'           => '',
-			'rest_status_code'         => $status_code,
-		);
-
-		// either update or insert
-		$wpdb->replace( REST_CACHE_TABLE, $data );
+		$response = WRC_Caching::store_data( $response, $args, $url, false );
 
 		return $response;
 	}

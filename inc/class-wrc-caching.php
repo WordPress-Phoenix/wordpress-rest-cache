@@ -29,24 +29,25 @@ class WRC_Caching {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @param      $response
-	 * @param      $args
-	 * @param      $url
+	 * @param mixed  $response
+	 * @param array  $args
+	 * @param string $url
+	 * @param bool   $verify_cacheable IF false, we won't bother to check against `is_cacheable_call()`.
 	 *
 	 * @return mixed
 	 */
-	static function store_data( $response, $args, $url ) {
-		$status_code = wp_remote_retrieve_response_code( $response );
+	static function store_data( $response, $args, $url, $verify_cacheable = true ) {
+		$status_code = (int) wp_remote_retrieve_response_code( $response );
 
 		// don't try to store if we don't have a 200 response
 		if (
 			(
 				true == apply_filters( 'wrc_only_cache_200', false )
-				&& 200 != $status_code
+				&& ( $status_code < 200 || $status_code >= 300 )
 			)
 			// only check is_cacheable_call if we're not running force update.
 			// Force update is usually set during cron, at which point we already know it's a cacheable call
-			|| false === static::is_cacheable_call( $args, $url )
+			|| ( $verify_cacheable && false === static::is_cacheable_call( $args, $url ) )
 		) {
 			return $response;
 		}
@@ -70,10 +71,9 @@ class WRC_Caching {
 
 		$data = array(
 			'rest_md5'            => $md5,
-			'rest_key'                 => $md5 . '+' . substr( sanitize_key( $tag ), 0, 32 ),
+			'rest_key'            => $md5 . '+' . substr( sanitize_key( $tag ), 0, 32 ),
 			'rest_domain'         => $domain,
 			'rest_path'           => $path,
-			'rest_response'       => maybe_serialize( $response ),
 			'rest_expires'        => $expiration_date,
 			// current UTC time
 			'rest_last_requested' => date( 'Y-m-d', time() ),
@@ -81,8 +81,16 @@ class WRC_Caching {
 			'rest_to_update'      => $update,
 			// Always set args to an empty string - they're only stored on "check expired" so the cron has info it needs.
 			'rest_args'           => '',
-			'rest_status_code'         => $status_code,
+			'rest_status_code'    => $status_code,
 		);
+
+		/**
+		 * If the status code indicates a bad response, we don't want
+		 * to store or overwrite the contents of `rest_response`.
+		 */
+		if ( $status_code >= 200 && $status_code < 300 ) {
+			$data['rest_response'] = maybe_serialize( $response );
+		}
 
 		// either update or insert
 		$wpdb->replace( REST_CACHE_TABLE, $data );
