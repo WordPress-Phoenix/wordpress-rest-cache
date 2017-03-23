@@ -125,7 +125,7 @@ class WRC_Cron {
 	 * @return mixed
 	 */
 	static function store_data( $response, $args, $url ) {
-		$response = WRC_Caching::store_data( $response, $args, $url, false );
+		$response = WRC_Caching::store_data( $response, 'context', 'Class', $args, $url, false );
 
 		return $response;
 	}

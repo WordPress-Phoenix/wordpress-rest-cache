@@ -18,7 +18,8 @@ class WRC_Caching {
 			add_filter( 'pre_http_request', array( get_called_class(), 'pre_http_request' ), 9, 3 );
 			// If it gets past pre_http_request and to the http response filter,
 			// check if we should create/update the data via store_data
-			add_filter( 'http_response', array( get_called_class(), 'store_data' ), 9, 3 );
+			add_action( 'http_api_debug', array( get_called_class(), 'store_data' ), 9, 5 );
+//			add_filter( 'http_response', array( get_called_class(), 'store_data' ), 9, 3 );
 		}
 	}
 
@@ -30,14 +31,18 @@ class WRC_Caching {
 	 * @since 0.1.0
 	 *
 	 * @param mixed  $response
+	 * @param string $context
+	 * @param string $class
 	 * @param array  $args
 	 * @param string $url
 	 * @param bool   $verify_cacheable IF false, we won't bother to check against `is_cacheable_call()`.
 	 *
 	 * @return mixed
 	 */
-	static function store_data( $response, $args, $url, $verify_cacheable = true ) {
+	static function store_data( $response, $context, $class, $args, $url, $verify_cacheable = true ) {
 		$status_code = (int) wp_remote_retrieve_response_code( $response );
+		// 0 isn't helpful... set to 500 if we didn't get an actual status code with the response.
+		$status_code = 0 === $status_code ? 500 : $status_code;
 
 		// don't try to store if we don't have a 200 response
 		if (
@@ -62,8 +67,8 @@ class WRC_Caching {
 		global $wpdb;
 
 		$parsed_url = WP_Rest_Cache::get_parsed_url( $url );
-		$domain = $parsed_url['domain'];
-		$path   = $parsed_url['path'];
+		$domain     = $parsed_url['domain'];
+		$path       = $parsed_url['path'];
 
 		$tag    = ! empty( $args['wp-rest-cache']['tag'] ) ? $args['wp-rest-cache']['tag'] : '';
 		$update = ! empty( $args['wp-rest-cache']['update'] ) ? $args['wp-rest-cache']['update'] : 0;
@@ -90,10 +95,54 @@ class WRC_Caching {
 		 */
 		if ( $status_code >= 200 && $status_code < 300 ) {
 			$data['rest_response'] = maybe_serialize( $response );
+			// TODO: needs tidying...
+			$wpdb->query(
+				$wpdb->prepare(
+					"INSERT INTO {$wpdb->rest_cache} "
+					. '(`rest_md5`,`rest_key`,`rest_domain`,`rest_path`,`rest_expires`,`rest_last_requested`,`rest_tag`,`rest_to_update`,`rest_args`,`rest_status_code`,`rest_response`)'
+					. 'VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%d,%s) ON DUPLICATE KEY UPDATE rest_md5 = %s',
+					array(
+						$data['rest_md5'],
+						$data['rest_key'],
+						$data['rest_domain'],
+						$data['rest_path'],
+						$data['rest_expires'],
+						$data['rest_last_requested'],
+						$data['rest_tag'],
+						$data['rest_to_update'],
+						$data['rest_args'],
+						$data['rest_status_code'],
+						$data['rest_response'],
+						$data['rest_md5'],
+					)
+				)
+			);
+		} else {
+			$wpdb->query(
+				$wpdb->prepare(
+					"INSERT INTO {$wpdb->rest_cache} "
+					. '(`rest_md5`,`rest_key`,`rest_domain`,`rest_path`,`rest_expires`,`rest_last_requested`,`rest_tag`,`rest_to_update`,`rest_args`,`rest_status_code`) '
+					. 'VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%d) ON DUPLICATE KEY UPDATE rest_md5 = %s',
+					array(
+						$data['rest_md5'],
+						$data['rest_key'],
+						$data['rest_domain'],
+						$data['rest_path'],
+						$data['rest_expires'],
+						$data['rest_last_requested'],
+						$data['rest_tag'],
+						$data['rest_to_update'],
+						$data['rest_args'],
+						$data['rest_status_code'],
+						$data['rest_md5'],
+					)
+				)
+			);
 		}
 
 		// either update or insert
-		$wpdb->replace( REST_CACHE_TABLE, $data );
+//		$wpdb->update( REST_CACHE_TABLE, $data, array( 'rest_md5' => $data['rest_md5'] ) );
+
 
 		return $response;
 	}
@@ -155,7 +204,7 @@ class WRC_Caching {
 		 * filter so that doesn't get run.
 		 */
 		if ( ! static::is_cacheable_call( $args, $url ) ) {
-			remove_filter( 'http_response', array( get_called_class(), 'store_data' ), 1 );
+			remove_action( 'http_api_debug', array( get_called_class(), 'store_data' ), 9 );
 
 			return false;
 		}
