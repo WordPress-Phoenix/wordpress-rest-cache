@@ -1,3 +1,7 @@
+#### 1.3.1
+* Critical update: if you were manually defining an `expires` value as 
+  a string, it was automatically setting the expiration time to 1 second.
+
 #### 1.3.0
 * Modify new column names to `rest_key` and `rest_status_code`, improve table rename/update
 * Add missing filter for new caching of error codes that aren't just 200

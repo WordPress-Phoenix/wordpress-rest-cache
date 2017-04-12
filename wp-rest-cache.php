@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/WordPress-Phoenix/wordpress-rest-cache
  * Description: A solution to caching REST data calls without relying on transients or wp_options tables. Note: for multisite "Network Activate", table may need manually created before activation.
  * Author: scarstens, mlteal
- * Version: 1.3.0
+ * Version: 1.3.1
  * Author URI: http://github.com/scarstens
  * License: GPL V2
  * Text Domain: rest_cache
@@ -219,15 +219,15 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			if ( ! is_array( $expires_values ) ) {
 				$default_expires_values            = WP_Rest_Cache::$default_expires;
 				$default_expires_values['default'] = $expires_values;
-				$time                              = $default_expires_values;
+				$expires_values                    = $default_expires_values;
+			}
+
+			if ( ! empty( $expires_values[ $status_code ] ) ) {
+				$time = $expires_values[ $status_code ];
+			} elseif ( ! empty( $expires_values['default'] ) ) {
+				$time = $expires_values['default'];
 			} else {
-				if ( ! empty( $expires_values[ $status_code ] ) ) {
-					$time = $expires_values[ $status_code ];
-				} elseif ( ! empty( $expires_values['default'] ) ) {
-					$time = $expires_values['default'];
-				} else {
-					$time = WP_Rest_Cache::$default_expires['default'];
-				}
+				$time = WP_Rest_Cache::$default_expires['default'];
 			}
 
 			return date( 'Y-m-d H:i:s', time() + (int) $time );
