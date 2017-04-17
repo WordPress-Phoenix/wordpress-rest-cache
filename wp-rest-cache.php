@@ -159,7 +159,8 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 			dbDelta( $sql );
-
+			update_site_option( self::$table_version_key, '3' );
+			
 		} // END public static function activate
 
 		/**
