@@ -132,8 +132,9 @@ class WRC_Caching {
 		}
 
 		// TODO: fix the exclusions functionality...
+		$host = isset( $check_url['host'] ) && in_array( $check_url['host'], $exclusions );
 
-		if ( 'get' !== $method || in_array( $check_url['host'], $exclusions ) || ! empty( $_REQUEST['force-check'] ) ) {
+		if ( 'get' !== $method || $host || ! empty( $_REQUEST['force-check'] ) ) {
 			return false;
 		}
 
