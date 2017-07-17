@@ -251,8 +251,16 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			if ( ! $table_version || 2 == (int) $table_version  ) {
 				// Version 2 adds a `rest_status_code` column to the table.
 				global $wpdb;
-				$query1 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `rest_status_code` VARCHAR(3) COLLATE utf8_unicode_ci NOT NULL DEFAULT '200' AFTER `rest_args`;" );
-				$query2 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `rest_key` VARCHAR(65) COLLATE utf8_unicode_ci NOT NULL AFTER `rest_md5`;" );
+				// Check to see if the columns already exist before attempting to add them in
+				$query1 = $wpdb->query( "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='{$wpdb->dbname}' AND TABLE_NAME = '{$wpdb->rest_cache}' AND COLUMN_NAME='rest_status_code';" );
+				if ( 1 != $query1 ) {
+					$query1 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `rest_status_code` VARCHAR(3) COLLATE utf8_unicode_ci NOT NULL DEFAULT '200' AFTER `rest_args`;" );
+				}
+
+				$query2 = $wpdb->query( "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='{$wpdb->dbname}' AND TABLE_NAME = '{$wpdb->rest_cache}' AND COLUMN_NAME='rest_key';" );
+				if ( 1 != $query2 ) {
+					$query2 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` ADD `rest_key` VARCHAR(65) COLLATE utf8_unicode_ci NOT NULL AFTER `rest_md5`;" );
+				}
 
 				if ( $query1 && $query2 ) {
 					update_site_option( self::$table_version_key, '3' );
@@ -267,8 +275,18 @@ if ( ! class_exists( 'WP_Rest_Cache' ) ) {
 			if ( 2 == (int) $table_version ) {
 				// Version 3 adds a `status_code` column to the table.
 				global $wpdb;
-				$query1 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` DROP COLUMN `status_code`;" );
-				$query2 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` DROP COLUMN `key`" );
+
+				// Only attempt to drop the columns if they're currently in the table.
+				// The check handles edge cases where the site option might not have properly updated.
+				$query1 = $wpdb->query( "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='{$wpdb->dbname}' AND TABLE_NAME = '{$wpdb->rest_cache}' AND COLUMN_NAME='status_code';" );
+				if ( 1 == $query1 ) {
+					$query1 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` DROP COLUMN `status_code`;" );
+				}
+
+				$query2 = $wpdb->query( "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='{$wpdb->dbname}' AND TABLE_NAME = '{$wpdb->rest_cache}' AND COLUMN_NAME='key';" );
+				if ( 1 == $query2 ) {
+					$query2 = $wpdb->query( "ALTER TABLE `{$wpdb->rest_cache}` DROP COLUMN `key`" );
+				}
 
 				if ( $query1 && $query2 ) {
 					update_site_option( self::$table_version_key, '3' );
