@@ -1,15 +1,15 @@
 # WP REST Cache
 
-**Please note: this plugin uses persistant and lazy cache to be the most efficient, see below for how that works.
+**Please note:** this plugin uses persistant and lazy cache to be the most efficient, see below for how that works.
 
 # Basic Usage
 
-##Installation
+## Installation
 
-###Automated remote installation
+### Automated remote installation
 * We recommend you install this plugin using [GitHub Updater remote installations](https://github.com/afragen/github-updater/blob/develop/README.md#remote-installation-of-repositories)
 
-###Manual Installation
+### Manual Installation
 1. Download the latest [tagged archive](https://github.com/afragen/github-updater/releases) (choose the "zip" option).
 2. Unzip the archive, rename the folder correctly to `github-updater`, then re-zip the file.
 3. Go to the __Plugins -> Add New__ screen and click the __Upload__ tab.
@@ -21,7 +21,7 @@
 ## Controlling cache with wp_remote_get args
 
 ### Setting custom cache times / expirations
-```
+```PHP
 wp_remote_get( $url, array( 
     'wp-rest-cache' => array( 
         'expires' => 12 * HOUR_IN_SECONDS,
@@ -30,7 +30,7 @@ wp_remote_get( $url, array(
 );
 ```
 ### Disable or Exclude cache 
-```
+```PHP
 wp_remote_get( $url, array( 
     'wp-rest-cache' => 'exclude',
 );
